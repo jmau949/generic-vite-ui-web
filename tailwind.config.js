@@ -40,26 +40,26 @@ export default {
       sans: ["Graphik", "sans-serif"],
       serif: ["Merriweather", "serif"],
     },
-    // fontSize: {
-    //   sm: ["0.857rem", { lineHeight: "1.5" }],
-    //   base: ["1rem", { lineHeight: "1.5" }],
-    //   lg: ["1.25rem", { lineHeight: "1.25" }],
-    //   xl: ["1.5rem", { lineHeight: "1.1" }],
-    //   "2xl": ["1.75rem", { lineHeight: "1" }],
-    //   "3xl": ["2rem", { lineHeight: "1" }],
-    // },
-    // zIndex: {
-    //   auto: "auto",
-    //   0: "0",
-    //   1: "1",
-    //   2: "2",
-    //   3: "3",
-    // },
-    // extend: {
-    //   borderRadius: {
-    //     xl: "0.714rem",
-    //   },
-    // },
+    fontSize: {
+      sm: ["0.857rem", { lineHeight: "1.5" }],
+      base: ["1rem", { lineHeight: "1.5" }],
+      lg: ["1.25rem", { lineHeight: "1.25" }],
+      xl: ["1.5rem", { lineHeight: "1.1" }],
+      "2xl": ["1.75rem", { lineHeight: "1" }],
+      "3xl": ["2rem", { lineHeight: "1" }],
+    },
+    zIndex: {
+      auto: "auto",
+      0: "0",
+      1: "1",
+      2: "2",
+      3: "3",
+    },
+    extend: {
+      borderRadius: {
+        xl: "0.714rem",
+      },
+    },
   },
   plugins: [],
 };
