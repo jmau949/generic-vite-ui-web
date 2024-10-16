@@ -1,7 +1,7 @@
 // api.js
 import axios from "axios";
 import { logError, notifyAdmin } from "../utils/errorHandling";
-import { refreshAuthToken } from "./auth";
+import { refreshAuthToken, getAuthToken } from "./auth";
 
 // Create an Axios instance with default settings
 const api = axios.create({
@@ -20,8 +20,13 @@ const delay = (duration) =>
 // Request interceptor for authorization
 api.interceptors.request.use(
   (config) => {
+    // If using cookies, the browser automatically handles them.
     // Optionally, add any additional headers here, such as Authorization tokens
-
+    // DO I NEED THE HEADER?
+    // const token = getAuthToken(); // Retrieve token from session storage
+    // if (token) {
+    //   config.headers.Authorization = `Bearer ${token}`;
+    // }
     return config;
   },
   (error) => {

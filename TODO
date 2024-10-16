@@ -1,0 +1,15 @@
+COOOKIES SET BY SERVER
+
+- Use Secure Cookies for Session Management: Ensure that your cookies are flagged as HttpOnly and Secure to prevent access from JavaScript and ensure they're only transmitted over HTTPS.
+  -- HTTP Security Headers: Make sure your production server (e.g., Nginx, Apache, or Node.js) adds headers like Content-Security-Policy (CSP), Strict-Transport-Security (HSTS), and X-Frame-Options for added security.
+
+- consider storing tokens in httpOnly secure cookies.
+
+Session-Based Authentication:
+
+We’ve added the withCredentials: true option to Axios. This ensures that cookies, including session cookies, are automatically sent with each request. Your server will handle the session via cookies, which is more secure than manually storing tokens on the client.
+No need to handle tokens or Authorization headers directly, as the session is managed server-side.
+
+Additional Considerations:
+CSRF Protection: Since sessions typically use cookies, implement CSRF protection on the server. You can send a CSRF token along with each request from the client.
+Secure Cookies: Ensure your session cookies are set with the HttpOnly, Secure, and SameSite flags to prevent access from JavaScript and to mitigate cross-site attacks.

@@ -1,46 +1,54 @@
-import { Helmet } from "react-helmet-async";
 import { Button, Input, Label } from "@jmau949/generic-components";
+import { loginUser } from "../api/userMethods";
+import MetaTags from "../components/MetaTags";
+import { useState } from "react";
+
+const initialState = {
+  message: "",
+};
 
 const LoginPage = () => {
+  const [state, setState] = useState(initialState);
+  const [loading, setLoading] = useState(false);
+  const formAction = async (event) => {
+    event.preventDefault();
+    const formData = new FormData(event.target);
+    const email = formData.get("email");
+    const password = formData.get("password");
+
+    try {
+      await loginUser({ email, password });
+      setState({ message: "Login successful!" });
+    } catch (error) {
+      console.log("error", error);
+      setState({ message: "Login failed. Please try again." });
+    }
+  };
   return (
-    <div className="flex min-h-screen justify-center items-center bg-grey1">
-      <Helmet>
-        <title>REPLACEME APP NAME - Login</title>
-        <meta
-          name="description"
-          content="Login to your REPLACEME APP NAME account to access your transcriptions, AI summaries, and recorded videos."
-        />
-        <meta name="robots" content="noindex, nofollow" />{" "}
-        {/* Login pages are typically not indexed */}
-        <meta name="author" content="REPLACEME APP NAME Team" />
-        <meta property="og:title" content="REPLACEME APP NAME - Login" />
-        <meta property="og:type" content="website" />
-        <meta
-          property="og:url"
-          content="https://www.REPLACEME APP NAME.com/login"
-        />
-        <meta
-          property="og:image"
-          content="https://www.REPLACEME APP NAME.com/og-login-image.png"
-        />
-        <meta
-          property="og:description"
-          content="Login to your REPLACEME APP NAME account and manage your transcriptions, AI summaries, and videos."
-        />
-        <meta name="twitter:card" content="summary_large_image" />
-        <meta name="twitter:site" content="@REPLACEME APP NAME" />
-        <meta name="twitter:title" content="REPLACEME APP NAME - Login" />
-        <meta
-          name="twitter:description"
-          content="Login to REPLACEME APP NAME to access your AI-powered summaries and recorded videos."
-        />
-        <meta
-          name="twitter:image"
-          content="https://www.REPLACEME APP NAME.com/twitter-login-image.png"
-        />
-      </Helmet>
-      <div className="w-min shadow-lg rounded-xl p-5 bg-white">
-        <form className="flex flex-col gap-5">
+    <div className="flex flex-col gap-10 min-h-screen justify-center items-center bg-grey1 py-14 px-6">
+      <MetaTags
+        title="REPLACEME APP NAME - Login"
+        description="Login to your REPLACEME APP NAME account to access your transcriptions, AI summaries, and recorded videos."
+        ogTitle="REPLACEME APP NAME - Login"
+        ogUrl="https://www.REPLACEME APP NAME.com/login"
+        ogImage="https://www.REPLACEME APP NAME.com/og-login-image.png"
+        ogDescription="Login to your REPLACEME APP NAME account and manage your transcriptions, AI summaries, and videos."
+        twitterTitle="REPLACEME APP NAME - Login"
+        twitterDescription="Login to REPLACEME APP NAME to access your AI-powered summaries and recorded videos."
+        twitterImage="https://www.REPLACEME APP NAME.com/twitter-login-image.png"
+        author="REPLACEME APP NAME Team"
+        robots="noindex, nofollow"
+      />
+
+      {
+        // <Logo />
+      }
+
+      <div
+        className="w-full shadow-lg rounded-xl p-5 bg-white dark:bg-grey4"
+        style={{ maxWidth: "26rem" }}
+      >
+        <form onSubmit={formAction} className="flex flex-col gap-5">
           <div>
             <Label htmlFor="email">Email</Label>
             <Input
@@ -61,9 +69,16 @@ const LoginPage = () => {
             />
           </div>
           <p aria-live="polite" className="text-red1">
-            Error Message
+            {state.message}
           </p>
-          <Button className="self-end">Sign in</Button>
+          <div className="flex items-center justify-between">
+            <a href="/sign-up" className="c-link">
+              Sign up
+            </a>
+            <Button type="submit" disabled={loading}>
+              {loading ? "Logging in..." : "Login"}
+            </Button>
+          </div>
         </form>
       </div>
     </div>
