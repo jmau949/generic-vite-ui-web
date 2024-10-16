@@ -2,8 +2,8 @@
 import { BrowserRouter as Router, Route, Routes } from "react-router-dom";
 import { HelmetProvider } from "react-helmet-async";
 import RootLayout from "./layouts/RootLayout";
-import Home from "./pages/HomePage";
-import Login from "./pages/LoginPage";
+import HomePage from "./pages/HomePage";
+import LoginPage from "./pages/LoginPage";
 import "./globals.sass";
 import "./themes/light.sass";
 import "./themes/light-high-contrast.sass";
@@ -16,11 +16,8 @@ const App = () => {
       <Router>
         <RootLayout>
           <Routes>
-            {
-              // <Route path="/" element={<Home />} />
-              // <Route path="/login" element={<Login />} />
-            }
-            <Route path="/" element={<Login />} />
+            <Route path="/login" element={<LoginPage />} />
+            <Route path="/" element={<HomePage />} />
           </Routes>
         </RootLayout>
       </Router>

@@ -1,7 +1,7 @@
 import { Helmet } from "react-helmet-async";
 import { Button, Input, Label } from "@jmau949/generic-components";
 
-const Login = () => {
+const LoginPage = () => {
   return (
     <div className="flex min-h-screen justify-center items-center bg-grey1">
       <Helmet>
@@ -70,4 +70,4 @@ const Login = () => {
   );
 };
 
-export default Login;
+export default LoginPage;

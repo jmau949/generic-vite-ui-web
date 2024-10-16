@@ -1,58 +1,58 @@
-import { Helmet } from "react-helmet-async";
+import React, { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { jwtDecode } from "jwt-decode";
+import { getAuthToken, removeAuthToken } from "../api/auth"; // Adjust paths as needed
+import MetaTags from "../components/MetaTags";
 
 const HomePage = () => {
+  const navigate = useNavigate();
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const token = getAuthToken();
+
+    // If no token, redirect to login
+    if (!token) {
+      navigate("/login");
+    } else {
+      try {
+        // Decode the JWT token to check for expiry
+        const decodedToken = jwtDecode(token);
+        const currentTime = Date.now() / 1000; // Convert to seconds
+
+        if (decodedToken.exp < currentTime) {
+          // Token expired, remove and redirect
+          removeAuthToken();
+          navigate("/login");
+        } else {
+          setIsLoading(false); // Token is valid, proceed to render page
+        }
+      } catch (error) {
+        // Handle any issues with decoding or invalid token
+        console.error("Token validation failed", error);
+        removeAuthToken(); // Invalidate token on error
+        navigate("/login");
+      }
+    }
+  }, [navigate]);
+
+  if (isLoading) {
+    // Show a loader while checking authentication
+    return <div>Loading...</div>;
+  }
+
   return (
     <div>
-      <Helmet>
-        <title>
-          REPLACEME APP NAME - Real-time Transcription and AI Summaries
-        </title>
-        <meta
-          name="description"
-          content="REPLACEME APP NAME lets you record, stream, and transcribe meetings, classes, or conversations using Meta glasses. Get AI-generated summaries instantly."
-        />
-        <meta
-          name="keywords"
-          content="Meta glasses, transcription, real-time streaming, AI summaries, meetings, REPLACEME APP NAME"
-        />
-        <meta name="author" content="REPLACEME APP NAME Team" />
-
-        {/* Open Graph metadata */}
-        <meta
-          property="og:title"
-          content="REPLACEME APP NAME - Real-time Transcription and AI Summaries"
-        />
-        <meta property="og:type" content="website" />
-        <meta property="og:url" content="https://www.REPLACEME APP NAME.com" />
-        <meta
-          property="og:image"
-          content="https://www.REPLACEME APP NAME.com/og-image.png"
-        />
-        <meta
-          property="og:description"
-          content="Use Meta glasses to stream and record videos, and receive instant AI-powered summaries and transcriptions."
-        />
-
-        {/* Twitter metadata */}
-        <meta name="twitter:card" content="summary_large_image" />
-        <meta name="twitter:site" content="@REPLACEME APP NAME" />
-        <meta
-          name="twitter:title"
-          content="REPLACEME APP NAME - Real-time Transcription and AI Summaries"
-        />
-        <meta
-          name="twitter:description"
-          content="Capture and transcribe conversations with AI summaries using Meta glasses in real time."
-        />
-        <meta
-          name="twitter:image"
-          content="https://www.REPLACEME APP NAME.com/twitter-image.png"
-        />
-
-        {/* Robots */}
-        <meta name="robots" content="index, follow" />
-      </Helmet>
-      <h1>Welcome to REPLACEME APP NAME</h1>
+      <MetaTags
+        title="Lenscribe - Real-time Transcription and AI Summaries"
+        description="Lenscribe lets you record, stream, and transcribe meetings, classes, or conversations using Meta glasses. Get AI-generated summaries instantly."
+        keywords="Meta glasses, transcription, real-time streaming, AI summaries, meetings, Lenscribe"
+        author="Lenscribe Team"
+        ogImageUrl="https://www.lenscribe.com/og-image.png"
+        ogUrl="https://www.lenscribe.com"
+        twitterImageUrl="https://www.lenscribe.com/twitter-image.png"
+      />
+      <h1>Welcome to Lenscribe</h1>
       <p>
         Transcribe and summarize your conversations with ease using Meta
         glasses.
