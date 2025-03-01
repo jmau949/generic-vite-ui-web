@@ -1,57 +1,76 @@
 import { api } from "./api";
 import { logError, notifyAdmin } from "../utils/errorHandling";
+import Cookies from "js-cookie";
+import { jwtDecode } from "jwt-decode"; // To decode and check JWT expiration
 
-// Save token securely in session storage
-export const saveAuthToken = (token) => {
-  try {
-    if (window.sessionStorage) {
-      sessionStorage.setItem("authToken", token);
-    } else {
-      throw new Error("Session storage is not available.");
-    }
-  } catch (error) {
-    logError("Failed to save auth token in session storage", error);
-    notifyAdmin("Critical issue: Unable to store auth token.");
-  }
-};
-
-// Retrieve token from session storage
+// Retrieve token from cookies
 export const getAuthToken = () => {
   try {
-    return sessionStorage.getItem("authToken");
+    console.log("Cookies", Cookies);
+    console.log("Cookies.get(authToken)", Cookies.get("authToken"));
+    return Cookies.get("authToken"); // Automatically handles decoding
   } catch (error) {
-    logError("Failed to retrieve auth token from session storage", error);
+    logError("Failed to retrieve auth token from cookies", error);
     return null;
   }
 };
-
-// Remove the token from session storage (e.g., on logout)
+// Remove the token from cookies (e.g., on logout)
 export const removeAuthToken = () => {
   try {
-    sessionStorage.removeItem("authToken");
+    Cookies.remove("authToken", {
+      path: "/",
+      secure: true,
+      sameSite: "Strict",
+    }); // Properly removes cookie
   } catch (error) {
-    logError("Failed to remove auth token from session storage", error);
+    logError("Failed to remove auth token from cookies", error);
   }
 };
 
-// Set Authorization header in Axios with the token from session storage
+// Set Authorization header in Axios with the token from cookies
 export const setAuthHeader = () => {
   const token = getAuthToken();
   if (token) {
     api.defaults.headers.common["Authorization"] = `Bearer ${token}`;
   } else {
-    logError("No token found in session storage");
+    logError("No token found in cookies");
+  }
+};
+// Proactively refresh the authentication token and store the new token in cookies
+// Decode and check if the token is expired
+export const isTokenExpired = (token) => {
+  try {
+    const decodedToken = jwtDecode(token);
+    const currentTime = Date.now() / 1000;
+
+    // Check if token has expired
+    return decodedToken.exp < currentTime;
+  } catch (error) {
+    logError("Failed to decode token", error);
+    return true; // Assume expired if decoding fails
   }
 };
 
-// Proactively refresh the authentication token and store the new token in session storage
+// Proactively refresh the authentication token and store the new token in cookies
 export const refreshAuthToken = async () => {
   try {
-    const response = await api.post("/auth/refresh-token");
+    const response = await api.post(
+      "/auth/refresh-token",
+      {},
+      { withCredentials: true }
+    );
 
     if (response.data && response.data.token) {
       const newToken = response.data.token;
-      saveAuthToken(newToken); // Save the new token in session storage
+
+      // In production, cookies should be set server-side with HttpOnly
+      Cookies.set("authToken", newToken, {
+        path: "/",
+        secure: true,
+        sameSite: "Strict",
+        expires: 7, // 7-day expiration
+      });
+
       setAuthHeader(); // Update Axios headers with the new token
     } else {
       throw new Error("Invalid token received during refresh.");
@@ -64,17 +83,17 @@ export const refreshAuthToken = async () => {
   }
 };
 
-// Helper function to check token existence
 export const isAuthenticated = () => {
-  return !!getAuthToken(); // Return true if token exists
+  const token = getAuthToken();
+  console.log("token", token);
+  return token && !isTokenExpired(token); // Return true if token exists and is not expired
 };
 
 // Helper function to clear session data on logout
-export const logout = () => {
+export const logout = async () => {
   try {
-    removeAuthToken();
-    // Optionally, make an API call to invalidate the session on the backend
-    // api.post("/auth/logout"); // Adjust based on backend logic
+    await api.post("/auth/logout", {}, { withCredentials: true }); // Ensure backend invalidates token
+    removeAuthToken(); // Clear client-side cookies
   } catch (error) {
     logError("Logout failed", error);
   }

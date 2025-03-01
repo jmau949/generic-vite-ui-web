@@ -20,13 +20,6 @@ const delay = (duration) =>
 // Request interceptor for authorization
 api.interceptors.request.use(
   (config) => {
-    // If using cookies, the browser automatically handles them.
-    // Optionally, add any additional headers here, such as Authorization tokens
-    // DO I NEED THE HEADER?
-    // const token = getAuthToken(); // Retrieve token from session storage
-    // if (token) {
-    //   config.headers.Authorization = `Bearer ${token}`;
-    // }
     return config;
   },
   (error) => {
@@ -43,6 +36,7 @@ api.interceptors.response.use(
     const originalRequest = error.config;
 
     // Handle 401 Unauthorized errors and refresh session
+    // Only refresh the token on 401 Unauthorized errors
     if (error.response?.status === 401 && !originalRequest._retry) {
       originalRequest._retry = true;
       try {

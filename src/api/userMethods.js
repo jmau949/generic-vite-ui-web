@@ -1,7 +1,7 @@
 import { api } from "./api";
 import { logError, notifyAdmin } from "../utils/errorHandling";
 import { validateEmail, validatePassword } from "../utils/validations";
-import { saveAuthToken } from "./auth";
+import { setAuthHeader } from "./auth";
 
 // API call to log in a user
 export const loginUser = async ({ email, password }) => {
@@ -15,15 +15,16 @@ export const loginUser = async ({ email, password }) => {
     const response = await api.post("/api/v1/users/login", {
       user: { email, password },
     });
-    // Save the token to session storage
-    console.log("response", response);
     const token = response.data.token;
+    console.log("response", response);
+
     if (token) {
-      saveAuthToken(token);
+      // No need to save token in session storage, as cookies are set server-side
+      setAuthHeader(); // Set the Authorization header in case token needs to be used immediately in subsequent requests
     } else {
       throw new Error("No token received from server.");
     }
-    console.log("response", response);
+
     return response.data;
   } catch (error) {
     logError("Login failed!!!", error);

@@ -2,45 +2,10 @@ import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { jwtDecode } from "jwt-decode";
 import { getAuthToken, removeAuthToken } from "../api/auth"; // Adjust paths as needed
+import Cookies from "js-cookie";
 import MetaTags from "../components/MetaTags";
 
 const HomePage = () => {
-  const navigate = useNavigate();
-  const [isLoading, setIsLoading] = useState(true);
-
-  useEffect(() => {
-    const token = getAuthToken();
-
-    // If no token, redirect to login
-    if (!token) {
-      navigate("/login");
-    } else {
-      try {
-        // Decode the JWT token to check for expiry
-        const decodedToken = jwtDecode(token);
-        const currentTime = Date.now() / 1000; // Convert to seconds
-
-        if (decodedToken.exp < currentTime) {
-          // Token expired, remove and redirect
-          removeAuthToken();
-          navigate("/login");
-        } else {
-          setIsLoading(false); // Token is valid, proceed to render page
-        }
-      } catch (error) {
-        // Handle any issues with decoding or invalid token
-        console.error("Token validation failed", error);
-        removeAuthToken(); // Invalidate token on error
-        navigate("/login");
-      }
-    }
-  }, [navigate]);
-
-  if (isLoading) {
-    // Show a loader while checking authentication
-    return <div>Loading...</div>;
-  }
-
   return (
     <div>
       <MetaTags

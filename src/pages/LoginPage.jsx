@@ -2,6 +2,7 @@ import { Button, Input, Label } from "@jmau949/generic-components";
 import { loginUser } from "../api/userMethods";
 import MetaTags from "../components/MetaTags";
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 const initialState = {
   message: "",
@@ -10,6 +11,7 @@ const initialState = {
 const LoginPage = () => {
   const [state, setState] = useState(initialState);
   const [loading, setLoading] = useState(false);
+  const navigate = useNavigate();
   const formAction = async (event) => {
     event.preventDefault();
     const formData = new FormData(event.target);
@@ -19,6 +21,7 @@ const LoginPage = () => {
     try {
       await loginUser({ email, password });
       setState({ message: "Login successful!" });
+      // navigate("/");
     } catch (error) {
       console.log("error", error);
       setState({ message: "Login failed. Please try again." });

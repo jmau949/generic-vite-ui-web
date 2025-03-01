@@ -4,6 +4,7 @@ import { HelmetProvider } from "react-helmet-async";
 import RootLayout from "./layouts/RootLayout";
 import HomePage from "./pages/HomePage";
 import LoginPage from "./pages/LoginPage";
+import PrivateRoute from "./components/PrivateRoute";
 import "./globals.sass";
 import "./themes/light.sass";
 import "./themes/light-high-contrast.sass";
@@ -17,7 +18,15 @@ const App = () => {
         <RootLayout>
           <Routes>
             <Route path="/login" element={<LoginPage />} />
-            <Route path="/" element={<HomePage />} />
+            {/* Protected Route */}
+            <Route
+              path="/"
+              element={
+                <PrivateRoute>
+                  <HomePage />
+                </PrivateRoute>
+              }
+            />
           </Routes>
         </RootLayout>
       </Router>
