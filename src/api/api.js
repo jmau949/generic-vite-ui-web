@@ -1,72 +1,71 @@
-// api.js
 import axios from "axios";
 import { logError, notifyAdmin } from "../utils/errorHandling";
-import { refreshAuthToken, getAuthToken } from "./auth";
+import { logoutUser } from "./user/userService";
 
-// Create an Axios instance with default settings
 const api = axios.create({
   baseURL: import.meta.env.VITE_API_BASE_URL,
+  // Set default headers for every request; here, we ensure that the content is sent in JSON format
   headers: {
     "Content-Type": "application/json",
   },
   timeout: import.meta.env.VITE_REQUEST_TIMEOUT || 10000,
-  withCredentials: true, // Send session cookies with requests
+  // Enable sending cookies and other credentials with requests to support sessions
+  withCredentials: true,
 });
 
-// Exponential backoff delay function
+// Define an asynchronous delay function that returns a promise, used for implementing exponential backoff
 const delay = (duration) =>
   new Promise((resolve) => setTimeout(resolve, duration));
 
-// Request interceptor for authorization
-api.interceptors.request.use(
-  (config) => {
-    return config;
-  },
-  (error) => {
-    logError(error); // Centralized error logging
-    notifyAdmin("Request failed: ", error); // Notify admin if request fails
-    return Promise.reject(error);
-  }
-);
-
-// Response interceptor for handling errors and retries
+// Add a response interceptor to the Axios instance to handle errors and implement retry logic
 api.interceptors.response.use(
-  (response) => response, // Return response directly if successful
+  // Success handler: if the response is successful, simply return it without modifications
+  (response) => response,
+  // Error handler: this asynchronous function processes any errors encountered during the request
   async (error) => {
+    // Save the configuration of the original request; this is useful for potentially retrying the request
     const originalRequest = error.config;
 
-    // Handle 401 Unauthorized errors and refresh session
-    // Only refresh the token on 401 Unauthorized errors
-    if (error.response?.status === 401 && !originalRequest._retry) {
-      originalRequest._retry = true;
-      try {
-        await refreshAuthToken(); // Attempt to refresh the session
-        return api(originalRequest); // Retry the original request
-      } catch (refreshError) {
-        logError(refreshError); // Log any error during session refresh
-        return Promise.reject(refreshError);
-      }
+    // Check if the error status code is 401 (Unauthorized)
+    // This typically indicates that the user's session has expired or they are not properly authenticated
+    if (error.response?.status === 401) {
+      // Log the error with a custom message about session expiration or unauthorized access
+      logError("Session expired or unauthorized access", error);
+      // Call the logoutUser function to clear the user session
+      await logoutUser();
+      // Reject the promise with a new error message prompting the user to log in again
+      return Promise.reject(
+        new Error("Your session has expired. Please log in again.")
+      );
     }
 
-    // Exponential backoff for throttling or retry logic (status 429 or 5xx)
+    // Check for HTTP status 429 (Too Many Requests) or any 5xx server errors,
+    // and ensure the request is eligible for a retry (i.e., it hasn't been flagged to skip retries)
     if (
       error.response?.status === 429 ||
-      (error.response?.status >= 500 && error.config.retry)
+      (error.response?.status >= 500 && originalRequest?.retry !== false)
     ) {
-      originalRequest._retry = true;
-      const retryCount = error.config.__retryCount || 0;
-      if (retryCount < process.env.VITE_MAX_RETRIES || 3) {
-        // Max retries configurable
-        error.config.__retryCount = retryCount + 1;
-        const backoffDuration = Math.pow(2, retryCount) * 1000; // Exponential backoff
+      // Initialize or retrieve the retry counter for this request; default to 0 if not already set
+      originalRequest._retry = originalRequest._retry || 0;
+      // Check if the current retry count is less than the maximum allowed retries (from an environment variable or default to 3)
+      if (originalRequest._retry < (import.meta.env.VITE_MAX_RETRIES || 3)) {
+        // Increment the retry counter for this request
+        originalRequest._retry += 1;
+        // Calculate the delay using exponential backoff: 2 raised to the power of the retry count multiplied by 1000 (to convert to milliseconds)
+        const backoffDuration = Math.pow(2, originalRequest._retry) * 1000;
+        // Wait for the calculated backoff duration before retrying the request
         await delay(backoffDuration);
-        return api(originalRequest); // Retry the original request
+        // Retry the original request using the same Axios instance and return its promise
+        return api(originalRequest);
       }
     }
 
-    // Handle timeout errors specifically
+    // Handle timeout errors: check if the error code indicates a connection abort (ECONNABORTED)
+    // or if the error message mentions "timeout"
     if (error.code === "ECONNABORTED" || error.message.includes("timeout")) {
+      // Log the timeout error with a custom message
       logError("Request timed out:", error);
+      // Reject the promise with a new error message to inform the caller of the timeout
       return Promise.reject(
         new Error(
           "The request took too long to complete. Please try again later."
@@ -74,10 +73,15 @@ api.interceptors.response.use(
       );
     }
 
-    logError(error); // Log other types of errors
-    notifyAdmin("Critical API failure", error); // Notify admin of critical failure
-    return Promise.reject(error); // Reject the error to be handled by caller
+    // For all other error types:
+    // Log the error using the logError function
+    logError(error);
+    // Notify the administrator of a critical API failure using the notifyAdmin function
+    notifyAdmin("Critical API failure", error);
+    // Reject the promise with the original error, so the caller can handle it appropriately
+    return Promise.reject(error);
   }
 );
 
+// Export the configured Axios instance (api) for use in other parts of the application
 export { api };

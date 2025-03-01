@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { jwtDecode } from "jwt-decode";
-import { getAuthToken, removeAuthToken } from "../api/auth"; // Adjust paths as needed
 import Cookies from "js-cookie";
 import MetaTags from "../components/MetaTags";
 

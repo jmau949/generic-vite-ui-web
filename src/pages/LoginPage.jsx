@@ -1,32 +1,43 @@
-import { Button, Input, Label } from "@jmau949/generic-components";
-import { loginUser } from "../api/userMethods";
-import MetaTags from "../components/MetaTags";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-
-const initialState = {
-  message: "",
-};
+import { useAuth } from "../auth/AuthProvider";
+import { Button, Input, Label } from "@jmau949/generic-components";
+import MetaTags from "../components/MetaTags";
 
 const LoginPage = () => {
-  const [state, setState] = useState(initialState);
+  const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
-  const formAction = async (event) => {
+  const { user, login } = useAuth(); // Use login function from AuthProvider
+
+  // ✅ Use `useEffect` to handle redirection (fixes navigation issue)
+  useEffect(() => {
+    if (user) {
+      navigate("/");
+    }
+  }, [user, navigate]);
+
+  const handleSubmit = async (event) => {
     event.preventDefault();
+    setMessage("");
+    setLoading(true);
+
     const formData = new FormData(event.target);
     const email = formData.get("email");
     const password = formData.get("password");
 
     try {
-      await loginUser({ email, password });
-      setState({ message: "Login successful!" });
-      // navigate("/");
+      await login(email, password); // ✅ Use AuthProvider's `login`
     } catch (error) {
-      console.log("error", error);
-      setState({ message: "Login failed. Please try again." });
+      console.error("Login error:", error);
+      setMessage(
+        error.response?.data?.message || "Login failed. Please try again."
+      );
+    } finally {
+      setLoading(false);
     }
   };
+
   return (
     <div className="flex flex-col gap-10 min-h-screen justify-center items-center bg-grey1 py-14 px-6">
       <MetaTags
@@ -43,37 +54,24 @@ const LoginPage = () => {
         robots="noindex, nofollow"
       />
 
-      {
-        // <Logo />
-      }
-
       <div
         className="w-full shadow-lg rounded-xl p-5 bg-white dark:bg-grey4"
         style={{ maxWidth: "26rem" }}
       >
-        <form onSubmit={formAction} className="flex flex-col gap-5">
+        <form onSubmit={handleSubmit} className="flex flex-col gap-5">
           <div>
             <Label htmlFor="email">Email</Label>
-            <Input
-              autoFocus={true}
-              required={true}
-              name="email"
-              type="email"
-              id="email"
-            />
+            <Input autoFocus required name="email" type="email" id="email" />
           </div>
           <div>
             <Label htmlFor="password">Password</Label>
-            <Input
-              required={true}
-              name="password"
-              type="password"
-              id="password"
-            />
+            <Input required name="password" type="password" id="password" />
           </div>
-          <p aria-live="polite" className="text-red1">
-            {state.message}
-          </p>
+          {message && (
+            <p aria-live="polite" className="text-red1">
+              {message}
+            </p>
+          )}
           <div className="flex items-center justify-between">
             <a href="/sign-up" className="c-link">
               Sign up
