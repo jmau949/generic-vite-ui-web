@@ -62,7 +62,7 @@ api.interceptors.response.use(
 
     // Handle timeout errors: check if the error code indicates a connection abort (ECONNABORTED)
     // or if the error message mentions "timeout"
-    if (error.code === "ECONNABORTED" || error.message.includes("timeout")) {
+    if (error.code === "ECONNABORTED" || error.message?.includes("timeout")) {
       // Log the timeout error with a custom message
       logError("Request timed out:", error);
       // Reject the promise with a new error message to inform the caller of the timeout

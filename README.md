@@ -54,6 +54,46 @@ generic-vite Web UI authenticates users via **AWS Cognito**, using a secure OAut
 - **Public Routes:** Some pages (e.g., login, signup) are accessible without authentication.
 - **Protected Routes:** If a user attempts to access protected routes without authentication, they are redirected to `/login`.
 
+## Environment Variables
+
+The project leverages Vite's built-in environment variable system to manage configurations for different environments. Vite automatically loads variables from files based on the current mode using the following patterns:
+
+- **.env**: Default variables.
+- **.env.local**: Local overrides (ignored by version control).
+- **.env.[mode]**: Mode-specific variables (e.g., `.env.development` for development, `.env.production` for production).
+- **.env.[mode].local**: Local overrides for a specific mode.
+
+In this project, we use:
+
+- **.env.development**: For development-specific settings.
+- **.env.production**: For production-specific settings.
+- **.env.local**: For local overrides that apply to any mode (ideal for machine-specific or secret values).
+
+**Note:** To ensure security and proper exposure in the client-side code, all variables that need to be accessed in your Vite-compiled code must be prefixed with `VITE_`. For example:
+
+~~~ini
+VITE_REQUEST_TIMEOUT=10000
+VITE_API_BASE_URL=http://localhost:3010
+~~~
+
+In your application code, you access these variables via `import.meta.env`:
+
+~~~js
+const api = axios.create({
+  baseURL: import.meta.env.VITE_API_BASE_URL,
+  // Set default headers for every request; here, we ensure that the content is sent in JSON format
+  headers: {
+    "Content-Type": "application/json",
+  },
+  timeout: import.meta.env.VITE_REQUEST_TIMEOUT || 10000,
+  // Enable sending cookies and other credentials with requests to support sessions
+  withCredentials: true,
+});
+~~~
+
+Vite merges these variables based on the mode. For example, when running in development mode, it will load both `.env.development` and `.env.local`, with local overrides taking precedence. In production, `.env.production` and `.env.local` are loaded similarly. This system makes it straightforward to maintain environment-specific configurations while allowing for local customizations.
+
+
 ## Installation and Setup
 
 To set up the project locally:
