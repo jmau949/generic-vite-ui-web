@@ -100,15 +100,16 @@ To set up the project locally:
 
 ```sh
 # Clone the repository
-git clone https://github.com/generic-vite/generic-vite-web-ui.git
-cd generic-vite-web-ui
+git clone https://github.com/jmau949/generic-vite-ui-web.git
+cd generic-vite-ui-web
 
 # Install dependencies
 npm install
+npm run dev
 ```
 
 ### Environment Variables
-Create a `.env` file and configure the necessary environment variables:
+Create a `.env.local` file and configure the necessary environment variables:
 
 ```ini
 VITE_REQUEST_TIMEOUT=10000
@@ -131,7 +132,7 @@ This will start the Vite development server on `http://localhost:3000/`.
 To create a production build:
 
 ```sh
-yarn build
+npm run build
 ```
 
 The output will be in the `dist/` folder, which can be deployed to a hosting provider such as **AWS S3 + CloudFront**.
@@ -159,7 +160,7 @@ The output will be in the `dist/` folder, which can be deployed to a hosting pro
 
 ## Contributing
 
-We welcome contributions! To contribute:
+To contribute:
 
 1. Fork the repository.
 2. Create a feature branch: `git checkout -b feature-name`.
@@ -169,4 +170,3 @@ We welcome contributions! To contribute:
 
 ---
 
-For questions or support, contact the generic-vite development team. 🚀
