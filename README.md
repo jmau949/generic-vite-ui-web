@@ -127,7 +127,7 @@ VITE_API_BASE_URL=http://localhost:3010
 Run the development server:
 
 ```sh
-yarn dev
+npm run dev
 ```
 
 This will start the Vite development server on `http://localhost:3000/`.
