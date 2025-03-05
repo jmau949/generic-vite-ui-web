@@ -1,30 +1,42 @@
-import axios from "axios";
+import axios, {
+  AxiosInstance,
+  AxiosResponse,
+  AxiosError,
+  AxiosRequestConfig,
+} from "axios";
 import { logError, notifyAdmin } from "../utils/errorHandling";
 import { logoutUser } from "./user/userService";
 
-const api = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL,
+const api: AxiosInstance = axios.create({
+  baseURL: import.meta.env.VITE_API_BASE_URL as string,
   // Set default headers for every request; here, we ensure that the content is sent in JSON format
   headers: {
     "Content-Type": "application/json",
   },
-  timeout: import.meta.env.VITE_REQUEST_TIMEOUT || 10000,
+  timeout:
+    (import.meta.env.VITE_REQUEST_TIMEOUT as number | undefined) || 10000,
   // Enable sending cookies and other credentials with requests to support sessions
   withCredentials: true,
 });
 
 // Define an asynchronous delay function that returns a promise, used for implementing exponential backoff
-const delay = (duration) =>
+const delay = (duration: number): Promise<void> =>
   new Promise((resolve) => setTimeout(resolve, duration));
+
+// Extend AxiosRequestConfig to include our custom properties
+interface ExtendedAxiosRequestConfig extends AxiosRequestConfig {
+  _retry?: number;
+  retry?: boolean;
+}
 
 // Add a response interceptor to the Axios instance to handle errors and implement retry logic
 api.interceptors.response.use(
   // Success handler: if the response is successful, simply return it without modifications
-  (response) => response,
+  (response: AxiosResponse) => response,
   // Error handler: this asynchronous function processes any errors encountered during the request
-  async (error) => {
+  async (error: AxiosError) => {
     // Save the configuration of the original request; this is useful for potentially retrying the request
-    const originalRequest = error.config;
+    const originalRequest = error.config as ExtendedAxiosRequestConfig;
 
     // Check if the error status code is 401 (Unauthorized)
     // This typically indicates that the user's session has expired or they are not properly authenticated
@@ -48,7 +60,10 @@ api.interceptors.response.use(
       // Initialize or retrieve the retry counter for this request; default to 0 if not already set
       originalRequest._retry = originalRequest._retry || 0;
       // Check if the current retry count is less than the maximum allowed retries (from an environment variable or default to 3)
-      if (originalRequest._retry < (import.meta.env.VITE_MAX_RETRIES || 3)) {
+      if (
+        originalRequest._retry <
+        ((import.meta.env.VITE_MAX_RETRIES as number) || 3)
+      ) {
         // Increment the retry counter for this request
         originalRequest._retry += 1;
         // Calculate the delay using exponential backoff: 2 raised to the power of the retry count multiplied by 1000 (to convert to milliseconds)

@@ -30,18 +30,22 @@ generic-vite Web UI utilizes the following technologies:
 generic-vite Web UI authenticates users via **AWS Cognito**, using a secure OAuth-based login flow. Below is the detailed authentication workflow:
 
 1. **User Login Initiation**
+
    - The user navigates to `/login`.
    - The UI redirects the user to AWS Cognito’s hosted login page.
 
 2. **Authentication with Cognito**
+
    - The user enters their credentials (email/password or social login via Google/Meta).
    - If authentication succeeds, Cognito redirects back to the UI with an authentication code.
 
 3. **Token Exchange**
+
    - The frontend exchanges the authentication code for an **ID Token, Access Token, and Refresh Token** using Cognito’s OAuth endpoint.
    - Tokens are securely stored in **HTTP-only cookies** (not in localStorage/sessionStorage).
 
 4. **Session Management**
+
    - **Access tokens** are used for API authentication (sent in the `Authorization: Bearer` header).
    - **Refresh tokens** allow automatic re-authentication without requiring the user to log in again.
    - Tokens expire based on Cognito's configured TTL.
@@ -51,6 +55,7 @@ generic-vite Web UI authenticates users via **AWS Cognito**, using a secure OAut
    - The user is redirected to the login page.
 
 ### Authorization Flow
+
 - **Public Routes:** Some pages (e.g., login, signup) are accessible without authentication.
 - **Protected Routes:** If a user attempts to access protected routes without authentication, they are redirected to `/login`.
 
@@ -71,14 +76,14 @@ In this project, we use:
 
 **Note:** To ensure security and proper exposure in the client-side code, all variables that need to be accessed in your Vite-compiled code must be prefixed with `VITE_`. For example:
 
-~~~ini
+```ini
 VITE_REQUEST_TIMEOUT=10000
 VITE_API_BASE_URL=http://localhost:3010
-~~~
+```
 
 In your application code, you access these variables via `import.meta.env`:
 
-~~~js
+```js
 const api = axios.create({
   baseURL: import.meta.env.VITE_API_BASE_URL,
   // Set default headers for every request; here, we ensure that the content is sent in JSON format
@@ -89,10 +94,9 @@ const api = axios.create({
   // Enable sending cookies and other credentials with requests to support sessions
   withCredentials: true,
 });
-~~~
+```
 
 Vite merges these variables based on the mode. For example, when running in development mode, it will load both `.env.development` and `.env.local`, with local overrides taking precedence. In production, `.env.production` and `.env.local` are loaded similarly. This system makes it straightforward to maintain environment-specific configurations while allowing for local customizations.
-
 
 ## Installation and Setup
 
@@ -109,6 +113,7 @@ npm run dev
 ```
 
 ### Environment Variables
+
 Create a `.env.local` file and configure the necessary environment variables:
 
 ```ini
@@ -169,4 +174,3 @@ To contribute:
 5. Create a pull request.
 
 ---
-
