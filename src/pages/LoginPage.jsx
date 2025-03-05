@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../auth/AuthProvider";
-import { Button, Input, Label } from "@jmau949/generic-components";
 import MetaTags from "../components/MetaTags";
 
 const LoginPage = () => {
@@ -60,12 +59,12 @@ const LoginPage = () => {
       >
         <form onSubmit={handleSubmit} className="flex flex-col gap-5">
           <div>
-            <Label htmlFor="email">Email</Label>
-            <Input autoFocus required name="email" type="email" id="email" />
+            <label htmlFor="email">Email</label>
+            <input autoFocus required name="email" type="email" id="email" />
           </div>
           <div>
-            <Label htmlFor="password">Password</Label>
-            <Input required name="password" type="password" id="password" />
+            <label htmlFor="password">Password</label>
+            <input required name="password" type="password" id="password" />
           </div>
           {message && (
             <p aria-live="polite" className="text-red1">
@@ -76,9 +75,9 @@ const LoginPage = () => {
             <a href="/sign-up" className="c-link">
               Sign up
             </a>
-            <Button type="submit" disabled={loading}>
+            <button type="submit" disabled={loading}>
               {loading ? "Logging in..." : "Login"}
-            </Button>
+            </button>
           </div>
         </form>
       </div>
