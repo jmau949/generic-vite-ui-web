@@ -52,7 +52,9 @@ const LoginPage = () => {
         author="REPLACEME APP NAME Team"
         robots="noindex, nofollow"
       />
-
+      <div className="bg-blue-500 text-white p-4 text-center rounded-lg shadow-lg">
+        Tailwind is working!
+      </div>
       <div
         className="w-full shadow-lg rounded-xl p-5 bg-white dark:bg-grey4"
         style={{ maxWidth: "26rem" }}

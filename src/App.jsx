@@ -17,10 +17,6 @@ import PrivateRoute from "./components/PrivateRoute";
 import { AuthProvider } from "./auth/AuthProvider"; // Ensure AuthProvider is used
 
 import "./globals.sass";
-import "./themes/light.sass";
-import "./themes/light-high-contrast.sass";
-import "./themes/dark.sass";
-import "./themes/dark-high-contrast.sass";
 
 const App = () => {
   return (
