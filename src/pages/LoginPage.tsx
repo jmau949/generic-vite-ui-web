@@ -1,94 +1,275 @@
-import { useState, useEffect, FormEvent } from "react";
-import { useNavigate } from "react-router-dom";
+import { useState, useEffect, useCallback, useRef } from "react";
+import { useNavigate, Link } from "react-router-dom";
 import { useAuth } from "../auth/AuthProvider";
-import MetaTags from "../components/MetaTags";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Spinner } from "@/components/ui/spinner";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormMessage,
+  FormLabel,
+  FormDescription,
+} from "@/components/ui/form";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import * as z from "zod";
 
-const LoginPage: React.FC = () => {
-  const [message, setMessage] = useState<string>("");
-  const [loading, setLoading] = useState<boolean>(false);
+// Define schema with more detailed validation messages
+const loginSchema = z.object({
+  email: z
+    .string()
+    .min(1, { message: "Email is required" })
+    .email({ message: "Please enter a valid email address" }),
+  password: z
+    .string()
+    .min(1, { message: "Password is required" })
+    .min(6, { message: "Password must be at least 6 characters" }),
+});
+
+type LoginFormValues = z.infer<typeof loginSchema>;
+
+// Custom hook for login logic
+const useLoginForm = () => {
   const navigate = useNavigate();
+  const [loading, setLoading] = useState<boolean>(false);
+  const [loginError, setLoginError] = useState<string | null>(null);
+  const [loginAttempts, setLoginAttempts] = useState<number>(0);
   const { user, login } = useAuth();
 
+  const form = useForm<LoginFormValues>({
+    resolver: zodResolver(loginSchema),
+    defaultValues: {
+      email: "",
+      password: "",
+    },
+    mode: "onChange", // Validate on change for immediate feedback
+  });
+
+  const isLocked = loginAttempts >= 5;
+  const lockTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  const resetLockout = useCallback(() => {
+    setLoginAttempts(0);
+    if (lockTimeoutRef.current) {
+      clearTimeout(lockTimeoutRef.current);
+      lockTimeoutRef.current = null;
+    }
+  }, []);
+
   useEffect(() => {
+    // Redirect if user is already logged in
     if (user) {
       navigate("/");
     }
-  }, [user, navigate]);
 
-  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    setMessage("");
+    // Clean up any timeout on unmount
+    return () => {
+      if (lockTimeoutRef.current) {
+        clearTimeout(lockTimeoutRef.current);
+      }
+    };
+  }, [user, navigate, resetLockout]);
+
+  // Reset lockout after 15 minutes
+  useEffect(() => {
+    if (isLocked && !lockTimeoutRef.current) {
+      lockTimeoutRef.current = setTimeout(() => {
+        resetLockout();
+      }, 15 * 60 * 1000);
+    }
+  }, [isLocked, resetLockout]);
+
+  const onSubmit = async (data: LoginFormValues) => {
+    if (isLocked) {
+      setLoginError("Too many failed attempts. Please try again later.");
+      return;
+    }
+
     setLoading(true);
-
-    const formData = new FormData(event.currentTarget);
-    const email = formData.get("email") as string;
-    const password = formData.get("password") as string;
+    setLoginError(null);
 
     try {
-      await login(email, password);
+      await login(data.email, data.password);
+      // Reset login attempts on success
+      resetLockout();
+      navigate("/");
     } catch (error: any) {
-      console.error("Login error:", error);
-      setMessage(
-        error.response?.data?.message || "Login failed. Please try again."
-      );
+      console.error("Login error", error);
+      // Increment failed login attempts
+      setLoginAttempts((prev) => prev + 1);
+
+      // More specific error messages
+      if (
+        error.code === "auth/invalid-credential" ||
+        error.code === "auth/user-not-found" ||
+        error.code === "auth/wrong-password"
+      ) {
+        setLoginError("Invalid email or password");
+      } else if (error.code === "auth/too-many-requests") {
+        setLoginError(
+          "Too many failed login attempts. Please try again later."
+        );
+      } else if (error.code === "auth/user-disabled") {
+        setLoginError(
+          "This account has been disabled. Please contact support."
+        );
+      } else if (error.code === "auth/network-request-failed") {
+        setLoginError(
+          "Network error. Please check your connection and try again."
+        );
+      } else {
+        setLoginError(error.message || "An unexpected error occurred");
+      }
     } finally {
       setLoading(false);
     }
   };
 
-  return (
-    <div className="flex flex-col gap-10 min-h-screen justify-center items-center bg-grey1 py-14 px-6">
-      {/*
-        The MetaTags component below injects a variety of SEO-friendly tags:
-        - Title: Sets the page title (displayed in search results and browser tabs).
-        - Description: Provides a summary of the page.
-        - Keywords: Lists important terms (less critical but can be used).
-        - Author: Indicates who created the content.
-        - Canonical: Points to the preferred version of the URL.
-        - Hreflang: Helps search engines serve the correct regional or language URL.
-        - Structured Data: Provides JSON-LD for rich search results.
-        - Open Graph and Twitter tags: Optimize social sharing displays.
-      */}
-      <MetaTags
-        title="REPLACEME"
-        description="REPLACEME"
-        keywords="REPLACEME"
-        author="REPLACEME"
-        ogImageUrl="REPLACEME"
-        ogUrl="REPLACEME"
-        twitterImageUrl="REPLACEME"
-      />
+  return {
+    form,
+    loading,
+    loginError,
+    isLocked,
+    onSubmit,
+  };
+};
 
-      <div className="bg-blue-500 text-white p-4 text-center rounded-lg shadow-lg">
-        Tailwind is working!
-      </div>
-      <div
-        className="w-full shadow-lg rounded-xl p-5 bg-white dark:bg-grey4"
-        style={{ maxWidth: "26rem" }}
-      >
-        <form onSubmit={handleSubmit} className="flex flex-col gap-5">
-          <div>
-            <label htmlFor="email">Email</label>
-            <input autoFocus required name="email" type="email" id="email" />
-          </div>
-          <div>
-            <label htmlFor="password">Password</label>
-            <input required name="password" type="password" id="password" />
-          </div>
-          {message && (
-            <p aria-live="polite" className="text-red1">
-              {message}
-            </p>
-          )}
-          <div className="flex items-center justify-between">
-            <a href="/sign-up" className="c-link">
+const LoginPage: React.FC = () => {
+  const { form, loading, loginError, isLocked, onSubmit } = useLoginForm();
+  const emailInputRef = useRef<HTMLInputElement>(null);
+
+  // Focus on email input when component mounts
+  useEffect(() => {
+    if (emailInputRef.current) {
+      emailInputRef.current.focus();
+    }
+  }, []);
+
+  return (
+    <div className="flex justify-center items-center min-h-screen bg-gray-100">
+      <div className="w-full max-w-md p-8 bg-white rounded-lg shadow-md">
+        <h1 className="mb-6 text-2xl font-bold text-center">Sign In</h1>
+
+        {loginError && (
+          <Alert variant="destructive" className="mb-4">
+            <AlertDescription>{loginError}</AlertDescription>
+          </Alert>
+        )}
+
+        {isLocked && (
+          <Alert variant="warning" className="mb-4">
+            <AlertDescription>
+              Your account has been temporarily locked due to multiple failed
+              login attempts. Please try again later or reset your password.
+            </AlertDescription>
+          </Alert>
+        )}
+
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+            <FormField
+              control={form.control}
+              name="email"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel htmlFor="email">Email</FormLabel>
+                  <FormControl>
+                    <Input
+                      id="email"
+                      placeholder="your.email@example.com"
+                      type="email"
+                      autoComplete="email"
+                      aria-describedby="email-description"
+                      disabled={loading || isLocked}
+                      {...field}
+                      ref={(e) => {
+                        // Handle both the ref from react-hook-form and our custom ref
+                        field.ref(e);
+                        if (emailInputRef.current !== e) {
+                          emailInputRef.current = e;
+                        }
+                      }}
+                    />
+                  </FormControl>
+                  <FormDescription id="email-description" className="sr-only">
+                    Enter the email address associated with your account
+                  </FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="password"
+              render={({ field }) => (
+                <FormItem>
+                  <div className="flex justify-between items-center">
+                    <FormLabel htmlFor="password">Password</FormLabel>
+                    <Link
+                      to="/forgot-password"
+                      className="text-sm text-blue-600 hover:text-blue-800"
+                      tabIndex={0}
+                    >
+                      Forgot password?
+                    </Link>
+                  </div>
+                  <FormControl>
+                    <Input
+                      id="password"
+                      type="password"
+                      placeholder="••••••••"
+                      autoComplete="current-password"
+                      aria-describedby="password-description"
+                      disabled={loading || isLocked}
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormDescription
+                    id="password-description"
+                    className="sr-only"
+                  >
+                    Enter your password
+                  </FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <Button
+              type="submit"
+              className="w-full"
+              disabled={loading || isLocked || !form.formState.isValid}
+              aria-disabled={loading || isLocked || !form.formState.isValid}
+            >
+              {loading ? (
+                <>
+                  <Spinner className="mr-2 h-4 w-4" aria-hidden="true" />
+                  <span>Signing in...</span>
+                </>
+              ) : (
+                "Sign In"
+              )}
+            </Button>
+          </form>
+        </Form>
+
+        <div className="mt-6 text-center">
+          <p>
+            Don't have an account?{" "}
+            <Link
+              to="/signup"
+              className="text-blue-600 hover:text-blue-800"
+              tabIndex={0}
+            >
               Sign up
-            </a>
-            <button type="submit" disabled={loading}>
-              {loading ? "Logging in..." : "Login"}
-            </button>
-          </div>
-        </form>
+            </Link>
+          </p>
+        </div>
       </div>
     </div>
   );
