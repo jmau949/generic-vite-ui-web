@@ -15,7 +15,11 @@ import {
 import { CheckCircle, AlertCircle, Clock, RefreshCw } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { confirmUserAfterSignUp, logoutUser } from "@/api/user/userService";
+import {
+  confirmUserAfterSignUp,
+  logoutUser,
+  resendConfirmationCode,
+} from "@/api/user/userService";
 
 const ConfirmEmailPage: React.FC = () => {
   const navigate = useNavigate();
@@ -79,9 +83,7 @@ const ConfirmEmailPage: React.FC = () => {
     setStatusMessage("");
 
     try {
-      // Implement Cognito resend code functionality
-      // For example: await resendConfirmationCode(user.email);
-
+      await resendConfirmationCode(email);
       setStatusMessage("A new verification code has been sent to your email");
     } catch (error: any) {
       console.error("Resend verification error", error);

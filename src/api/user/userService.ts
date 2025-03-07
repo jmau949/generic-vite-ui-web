@@ -144,6 +144,22 @@ export const forgotPassword = async (
   }
 };
 
+export const resendConfirmationCode = async (email: string): Promise<void> => {
+  try {
+    await api.post(
+      "/api/v1/users/resend-confirmation-code",
+      { user: { email } },
+      { withCredentials: true }
+    );
+  } catch (error: any) {
+    logError("re send confirmation code error", error);
+    throw new Error(
+      error.response?.data?.error ||
+        "Password reset confirmation failed. Please try again later."
+    );
+  }
+};
+
 export const confirmForgotPassword = async (
   userData: Partial<User>
 ): Promise<void> => {

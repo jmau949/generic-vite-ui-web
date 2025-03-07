@@ -68,6 +68,11 @@ const useLoginForm = () => {
           state: { email: data.email },
         });
       }
+      if (error?.message?.includes("Password reset required")) {
+        navigate("/reset-password", {
+          state: { email: data.email },
+        });
+      }
       setLoginError(error.message || "An unexpected error occurred");
     } finally {
       setLoading(false);
