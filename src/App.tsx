@@ -1,11 +1,12 @@
 import { BrowserRouter as Router, Route, Routes } from "react-router-dom";
 import RootLayout from "./layouts/RootLayout";
 import HomePage from "./pages/HomePage";
-import LoginPage from "./pages/LoginPage";
-import SignUpPage from "./pages/SignUpPage";
-import ForgotPasswordPage from "./pages/ForgotPasswordPage";
-import ConfirmEmailPage from "./pages/ConfirmEmailPage";
-import ResetPasswordPage from "./pages/ResetPasswordPage";
+import LoginPage from "./pages/auth/LoginPage";
+import SignUpPage from "./pages/auth/SignUpPage";
+import ForgotPasswordPage from "./pages/auth/ForgotPasswordPage";
+import ConfirmEmailPage from "./pages/auth/ConfirmEmailPage";
+import ResetPasswordPage from "./pages/auth/ResetPasswordPage";
+import NotFoundPage from "./pages/errors/NotFoundPage";
 import PrivateRoute from "./components/PrivateRoute";
 import { AuthProvider } from "./auth/AuthProvider";
 import ErrorBoundary from "./components/ErrorBoundary/ErrorBoundary";
@@ -29,6 +30,7 @@ const App: React.FC = () => (
                 </PrivateRoute>
               }
             />
+            <Route path="*" element={<NotFoundPage />} />
           </Routes>
         </RootLayout>
       </Router>

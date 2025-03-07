@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Spinner } from "@/components/ui/spinner";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import errorLoggingService from "../components/ErrorBoundary/errorLoggingService";
+import errorLoggingService from "../../components/ErrorBoundary/errorLoggingService";
 import {
   Form,
   FormControl,

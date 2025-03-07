@@ -1,9 +1,8 @@
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import { useAuth } from "../auth/AuthProvider";
+import { useAuth } from "../../auth/AuthProvider";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Spinner } from "@/components/ui/spinner";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import {
   Form,
@@ -12,10 +11,9 @@ import {
   FormItem,
   FormMessage,
   FormLabel,
-  FormDescription,
 } from "@/components/ui/form";
 import { useForm } from "react-hook-form";
-import { signupUser } from "../api/user/userService";
+import { signupUser } from "../../api/user/userService";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 
