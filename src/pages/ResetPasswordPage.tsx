@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Spinner } from "@/components/ui/spinner";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import errorLoggingService from "../components/ErrorBoundary/errorLoggingService";
 import {
   Form,
   FormControl,
@@ -55,7 +56,6 @@ type ResetPasswordFormValues = z.infer<typeof resetPasswordSchema>;
 
 // Custom hook for reset password logic
 const useResetPasswordForm = (defaultEmail: string = "") => {
-  const navigate = useNavigate();
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<boolean>(false);
@@ -84,6 +84,11 @@ const useResetPasswordForm = (defaultEmail: string = "") => {
       setSuccess(true);
     } catch (error: any) {
       console.error("Password reset confirmation error:", error);
+      errorLoggingService.logError(
+        error instanceof Error ? error : new Error(String(error)),
+        null,
+        { component: "PasswordReset", operation: "confirmForgotPassword" }
+      );
 
       // Extract error message
       const errorMessage: string =
