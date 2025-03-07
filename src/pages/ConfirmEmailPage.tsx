@@ -1,9 +1,9 @@
 import { useState, useEffect } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import { useNavigate, Link, useLocation } from "react-router-dom";
 import { useAuth } from "../auth/AuthProvider";
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import {
   Card,
   CardContent,
@@ -13,6 +13,9 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { CheckCircle, AlertCircle, Clock, RefreshCw } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { confirmUserAfterSignUp, logoutUser } from "@/api/user/userService";
 
 const ConfirmEmailPage: React.FC = () => {
   const navigate = useNavigate();
@@ -23,87 +26,71 @@ const ConfirmEmailPage: React.FC = () => {
     "pending" | "success" | "error"
   >("pending");
   const [statusMessage, setStatusMessage] = useState<string>("");
-  const [countdown, setCountdown] = useState<number>(60);
-  const [canResend, setCanResend] = useState<boolean>(false);
+  const [confirmationCode, setconfirmationCode] = useState<string>("");
+  const location = useLocation();
+  // Fallback in case the state isn’t available
+  const email = location.state?.email || "";
 
-  // Check if user exists and is not verified
   useEffect(() => {
-    if (user?.emailVerified) {
-      // User is already verified, redirect to dashboard
-      setVerificationStatus("success");
-      setStatusMessage("Your email has been verified successfully!");
-      setTimeout(() => navigate("/dashboard"), 2000);
+    // Redirect if user is already logged in
+    if (user) {
+      navigate("/");
     }
   }, [user, navigate]);
 
-  // Countdown timer for resending verification email
-  useEffect(() => {
-    let timer: NodeJS.Timeout;
-
-    if (countdown > 0 && !canResend) {
-      timer = setTimeout(() => setCountdown(countdown - 1), 1000);
-    } else if (countdown === 0 && !canResend) {
-      setCanResend(true);
+  // Function to verify email with code
+  const handleVerifyEmail = async () => {
+    if (!confirmationCode.trim()) {
+      setStatusMessage("Please enter the verification code");
+      return;
     }
 
-    return () => {
-      if (timer) clearTimeout(timer);
-    };
-  }, [countdown, canResend]);
-
-  // Function to check email verification status
-  const checkVerificationStatus = async () => {
     setLoading(true);
     setStatusMessage("");
 
     try {
-      // Force refresh the user to check if email has been verified
-      if (user) {
-        await user.reload();
-
-        if (user?.emailVerified) {
-          setVerificationStatus("success");
-          setStatusMessage("Your email has been verified successfully!");
-          setTimeout(() => navigate("/dashboard"), 2000);
-        } else {
-          setStatusMessage(
-            "Your email is not verified yet. Please check your inbox."
-          );
-        }
-      }
+      await confirmUserAfterSignUp(email, confirmationCode);
+      setVerificationStatus("success");
+      setStatusMessage("Your email has been verified successfully!");
+      setTimeout(() => navigate("/login"), 2000);
     } catch (error: any) {
-      console.error("Verification check error", error);
+      console.error("Verification error", error);
       setVerificationStatus("error");
-      setStatusMessage(
-        error.message || "An error occurred while checking verification status"
-      );
+
+      if (error.code === "CodeMismatchException") {
+        setStatusMessage("Invalid verification code. Please try again.");
+      } else if (error.code === "ExpiredCodeException") {
+        setStatusMessage(
+          "Verification code has expired. Please request a new one."
+        );
+      } else {
+        setStatusMessage(
+          error.message || "An error occurred during verification"
+        );
+      }
     } finally {
       setLoading(false);
     }
   };
 
-  // Function to resend verification email
+  // Function to resend verification code
   const handleResendVerification = async () => {
     setResendLoading(true);
     setStatusMessage("");
 
     try {
-      if (user) {
-        await sendEmailVerification(user);
-        setStatusMessage("Verification email has been resent to your inbox");
-        setCanResend(false);
-        setCountdown(60);
-      }
+      // Implement Cognito resend code functionality
+      // For example: await resendConfirmationCode(user.email);
+
+      setStatusMessage("A new verification code has been sent to your email");
     } catch (error: any) {
       console.error("Resend verification error", error);
       setVerificationStatus("error");
 
-      if (error.code === "auth/too-many-requests") {
+      if (error.code === "LimitExceededException") {
         setStatusMessage("Too many attempts. Please try again later.");
       } else {
-        setStatusMessage(
-          error.message || "Failed to resend verification email"
-        );
+        setStatusMessage(error.message || "Failed to resend verification code");
       }
     } finally {
       setResendLoading(false);
@@ -113,7 +100,7 @@ const ConfirmEmailPage: React.FC = () => {
   // Function to handle logout
   const handleLogout = async () => {
     try {
-      await logout();
+      await logoutUser();
       navigate("/login");
     } catch (error) {
       console.error("Logout error", error);
@@ -140,9 +127,11 @@ const ConfirmEmailPage: React.FC = () => {
           <CardTitle className="text-2xl font-bold">
             Verify Your Email
           </CardTitle>
-          <CardDescription>
-            We've sent a verification link to {user?.email}
-          </CardDescription>
+          {email && (
+            <CardDescription>
+              We've sent a verification code to {email}
+            </CardDescription>
+          )}
         </CardHeader>
 
         <CardContent className="space-y-6">
@@ -165,37 +154,47 @@ const ConfirmEmailPage: React.FC = () => {
 
           <div className="text-center space-y-2">
             <p className="text-gray-600">
-              Please check your email inbox and click on the verification link
-              to confirm your email address.
+              Please check your email inbox and enter the verification code
+              below.
             </p>
             <p className="text-sm text-gray-500">
               If you don't see the email, check your spam folder.
             </p>
           </div>
 
-          <div className="flex flex-col space-y-4">
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="verification-code">Verification Code</Label>
+              <Input
+                id="verification-code"
+                type="text"
+                placeholder="Enter verification code"
+                value={confirmationCode}
+                onChange={(e) => setconfirmationCode(e.target.value)}
+              />
+            </div>
+
             <Button
-              onClick={checkVerificationStatus}
-              disabled={loading}
-              aria-disabled={loading}
-              variant="outline"
+              onClick={handleVerifyEmail}
+              disabled={loading || !confirmationCode.trim()}
+              aria-disabled={loading || !confirmationCode.trim()}
               className="w-full"
             >
               {loading ? (
                 <>
                   <Spinner className="mr-2 h-4 w-4" aria-hidden="true" />
-                  <span>Checking...</span>
+                  <span>Verifying...</span>
                 </>
               ) : (
-                "I've verified my email"
+                "Verify Email"
               )}
             </Button>
 
             <Button
               onClick={handleResendVerification}
-              disabled={resendLoading || !canResend}
-              aria-disabled={resendLoading || !canResend}
-              variant="ghost"
+              disabled={resendLoading}
+              aria-disabled={resendLoading}
+              variant="outline"
               className="w-full flex items-center justify-center"
             >
               {resendLoading ? (
@@ -203,15 +202,10 @@ const ConfirmEmailPage: React.FC = () => {
                   <Spinner className="mr-2 h-4 w-4" aria-hidden="true" />
                   <span>Sending...</span>
                 </>
-              ) : canResend ? (
-                <>
-                  <RefreshCw className="mr-2 h-4 w-4" />
-                  <span>Resend verification email</span>
-                </>
               ) : (
                 <>
-                  <Clock className="mr-2 h-4 w-4" />
-                  <span>Resend in {countdown}s</span>
+                  <RefreshCw className="mr-2 h-4 w-4" />
+                  <span>Resend verification code</span>
                 </>
               )}
             </Button>

@@ -60,6 +60,32 @@ export const signupUser = async (userData: Partial<User>): Promise<User> => {
   }
 };
 
+//confirm user after sign up
+export const confirmUserAfterSignUp = async (
+  email:string, confirmationCode:string
+): Promise<void> => {
+
+  try {
+    await api.post<{ user: User }>(
+      "/api/v1/users/confirm",
+      { user: {
+        email, 
+        confirmationCode
+      }
+       },
+      { withCredentials: true }
+    );
+
+    return 
+  } catch (error: any) {
+    logError("Signup failed", error);
+    throw new Error(
+      error.response?.data?.error || "Signup failed. Please try again later."
+    );
+  }
+};
+
+
 // Update a user's profile
 export const updateUser = async (userData: Partial<User>): Promise<User> => {
   try {
@@ -95,6 +121,7 @@ export const fetchCurrentUser = async (): Promise<User | null> => {
     });
     return data?.user || null;
   } catch (error: any) {
+    console.log('error', error)
     return null;
   }
 };

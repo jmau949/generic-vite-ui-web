@@ -93,7 +93,9 @@ const useSignupForm = () => {
         password: data.password,
       };
       await signupUser(userData);
-      navigate("/confirm-email");
+      navigate("/confirm-email", {
+        state: { email: data.email },
+      });
     } catch (error: any) {
       setSignupError(error.message || "An unexpected error occurred");
     } finally {

@@ -58,34 +58,17 @@ const useLoginForm = () => {
   const onSubmit = async (data: LoginFormValues) => {
     setLoading(true);
     setLoginError(null);
-
     try {
       await login(data.email, data.password);
       navigate("/");
     } catch (error: any) {
-      console.error("Login error", error);
-
-      if (
-        error.code === "auth/invalid-credential" ||
-        error.code === "auth/user-not-found" ||
-        error.code === "auth/wrong-password"
-      ) {
-        setLoginError("Invalid email or password");
-      } else if (error.code === "auth/too-many-requests") {
-        setLoginError(
-          "Too many failed login attempts. Please try again later."
-        );
-      } else if (error.code === "auth/user-disabled") {
-        setLoginError(
-          "This account has been disabled. Please contact support."
-        );
-      } else if (error.code === "auth/network-request-failed") {
-        setLoginError(
-          "Network error. Please check your connection and try again."
-        );
-      } else {
-        setLoginError(error.message || "An unexpected error occurred");
+      if (error?.message?.includes("User not confirmed")) {
+        // Navigate to confirm email page, passing along the email and password
+        navigate("/confirm-email", {
+          state: { email: data.email },
+        });
       }
+      setLoginError(error.message || "An unexpected error occurred");
     } finally {
       setLoading(false);
     }

@@ -51,7 +51,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       if (!currentUser) throw new Error("User data not returned after login.");
       setUser(currentUser);
     } catch (error) {
-      console.error("Login failed:", error);
+      console.error("login error", error);
       throw error;
     }
   };
