@@ -5,6 +5,7 @@ import LoginPage from "./pages/LoginPage";
 import SignUpPage from "./pages/SignUpPage";
 import ForgotPasswordPage from "./pages/ForgotPasswordPage";
 import ConfirmEmailPage from "./pages/ConfirmEmailPage";
+import ResetPasswordPage from "./pages/ResetPasswordPage";
 import PrivateRoute from "./components/PrivateRoute";
 import { AuthProvider } from "./auth/AuthProvider";
 
@@ -17,6 +18,7 @@ const App: React.FC = () => (
           <Route path="/signup" element={<SignUpPage />} />
           <Route path="/forgot-password" element={<ForgotPasswordPage />} />
           <Route path="/confirm-email" element={<ConfirmEmailPage />} />
+          <Route path="/reset-password" element={<ResetPasswordPage />} />
           <Route
             path="/"
             element={

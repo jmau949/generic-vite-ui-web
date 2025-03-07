@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate, Link } from "react-router-dom";
+import { useAuth } from "../auth/AuthProvider";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Spinner } from "@/components/ui/spinner";
@@ -11,279 +12,236 @@ import {
   FormItem,
   FormMessage,
   FormLabel,
+  FormDescription,
 } from "@/components/ui/form";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { resetPassword, confirmForgotPassword } from "@/api/user/userService";
+import { forgotPassword } from "@/api/user/userService";
 
-// Form validation schemas
-const requestSchema = z.object({
+// Form validation schema
+const forgotPasswordSchema = z.object({
   email: z
     .string()
     .min(1, { message: "Email is required" })
     .email({ message: "Please enter a valid email address" }),
 });
 
-const confirmSchema = z
-  .object({
-    code: z.string().min(6, { message: "Code must be 6 characters" }),
-    password: z
-      .string()
-      .min(8, { message: "Password must be at least 8 characters" }),
-    confirmPassword: z.string(),
-  })
-  .refine((data) => data.password === data.confirmPassword, {
-    message: "Passwords do not match",
-    path: ["confirmPassword"],
-  });
+type ForgotPasswordFormValues = z.infer<typeof forgotPasswordSchema>;
 
-type RequestFormValues = z.infer<typeof requestSchema>;
-type ConfirmFormValues = z.infer<typeof confirmSchema>;
-
-const ForgotPasswordPage: React.FC = () => {
+// Custom hook for forgot password logic
+const useForgotPasswordForm = () => {
   const navigate = useNavigate();
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
-  const [resetStep, setResetStep] = useState<"request" | "confirm">("request");
-  const [email, setEmail] = useState<string>("");
-  const emailInputRef = useRef<HTMLInputElement>(null);
+  const [success, setSuccess] = useState<boolean>(false);
 
-  // Request form
-  const requestForm = useForm<RequestFormValues>({
-    resolver: zodResolver(requestSchema),
-    defaultValues: { email: "" },
+  const form = useForm<ForgotPasswordFormValues>({
+    resolver: zodResolver(forgotPasswordSchema),
+    defaultValues: {
+      email: "",
+    },
     mode: "onChange",
   });
 
-  // Confirm form
-  const confirmForm = useForm<ConfirmFormValues>({
-    resolver: zodResolver(confirmSchema),
-    defaultValues: { code: "", password: "", confirmPassword: "" },
-    mode: "onChange",
-  });
-
-  // Focus email input on initial render
-  useEffect(() => {
-    emailInputRef.current?.focus();
-  }, []);
-
-  useEffect(() => {
-    console.log("email", email);
-  });
-  // Handle request password reset
-  const handleRequestReset = async (data: RequestFormValues) => {
+  const onSubmit = async (data: ForgotPasswordFormValues) => {
     setLoading(true);
     setError(null);
+    setSuccess(false);
 
     try {
-      // await resetPassword({ email: data.email });
-      setEmail(data.email);
-      setResetStep("confirm");
+      await forgotPassword({ email: data.email });
+      setSuccess(true);
+      // Optional: clear form after successful submission
+      // form.reset(); - Commented out to keep email for navigation
     } catch (error: any) {
-      // Don't reveal if email exists for security
-      if (error.message?.includes("no registered/verified email")) {
-        setResetStep("confirm");
-        return;
-      }
+      // Extract error message
+      const errorMessage: string =
+        error.message || "An unknown error occurred.";
 
-      // Error message handling
+      // Define default error message
       let userFriendlyMessage =
         "Failed to send password reset email. Please try again.";
 
-      if (error.message?.includes("Invalid parameter in request")) {
+      // Handle specific Cognito error messages
+      if (errorMessage.includes("no registered/verified email")) {
+        setSuccess(true); // Don't reveal if email exists
+        return;
+      } else if (errorMessage.includes("Invalid parameter in request")) {
         userFriendlyMessage = "The email address is invalid.";
-      } else if (error.message?.includes("Attempt limit exceeded")) {
+      } else if (errorMessage.includes("Attempt limit exceeded")) {
         userFriendlyMessage = "Too many requests. Please try again later.";
-      } else if (error.message?.includes("Network error")) {
+      } else if (errorMessage.includes("Network error")) {
         userFriendlyMessage =
           "Network error. Please check your connection and try again.";
       }
 
+      // Set sanitized error message
       setError(userFriendlyMessage);
     } finally {
       setLoading(false);
     }
   };
 
-  // Handle confirm password reset
-  const handleConfirmReset = async (data: ConfirmFormValues) => {
-    setLoading(true);
-    setError(null);
+  return {
+    form,
+    loading,
+    error,
+    success,
+    setSuccess,
+    onSubmit,
+  };
+};
 
-    try {
-      await confirmForgotPassword({
-        email,
-        code: data.code,
-        password: data.password,
-      });
-      navigate("/login");
-    } catch (error: any) {
-      setError(error.message || "Failed to reset password.");
-    } finally {
-      setLoading(false);
+const ForgotPasswordPage: React.FC = () => {
+  const { form, loading, error, success, setSuccess, onSubmit } =
+    useForgotPasswordForm();
+  const emailInputRef = useRef<HTMLInputElement>(null);
+  const navigate = useNavigate();
+
+  // Focus on email input when component mounts
+  useEffect(() => {
+    if (emailInputRef.current) {
+      emailInputRef.current.focus();
     }
+  }, []);
+
+  const handleProceedToReset = () => {
+    const email = form.getValues().email;
+    navigate(`/reset-password?email=${encodeURIComponent(email)}`);
   };
 
   return (
     <div className="flex justify-center items-center min-h-screen bg-gray-100">
       <div className="w-full max-w-md p-8 bg-white rounded-lg shadow-md">
-        <h1 className="mb-6 text-2xl font-bold text-center">
-          {resetStep === "request"
-            ? "Reset Password"
-            : "Enter Verification Code"}
-        </h1>
+        <h1 className="mb-6 text-2xl font-bold text-center">Reset Password</h1>
 
-        {error && (
-          <Alert variant="destructive" className="mb-4">
-            <AlertDescription>{error}</AlertDescription>
-          </Alert>
-        )}
-
-        {resetStep === "request" ? (
+        {success ? (
+          <div className="space-y-6">
+            <Alert variant="success" className="mb-4">
+              <AlertDescription>
+                If an account exists with this email, we've sent you
+                instructions to reset your password. Please check your inbox and
+                spam folder.
+              </AlertDescription>
+            </Alert>
+            <div className="flex flex-col space-y-4">
+              <Button onClick={handleProceedToReset} className="w-full">
+                Enter Reset Code
+              </Button>
+              <Button
+                onClick={() => navigate("/login")}
+                variant="outline"
+                className="w-full"
+              >
+                Return to Login
+              </Button>
+              <Button
+                onClick={() => {
+                  setSuccess(false);
+                  // Don't reset form to keep the email for convenience
+                }}
+                variant="ghost"
+                className="w-full"
+              >
+                Send Another Reset Link
+              </Button>
+            </div>
+          </div>
+        ) : (
           <>
             <p className="mb-6 text-gray-600">
               Enter your email address and we'll send you instructions to reset
               your password.
             </p>
 
-            <Form {...requestForm}>
+            {error && (
+              <Alert variant="destructive" className="mb-4">
+                <AlertDescription>{error}</AlertDescription>
+              </Alert>
+            )}
+
+            <Form {...form}>
               <form
-                onSubmit={requestForm.handleSubmit(handleRequestReset)}
+                onSubmit={form.handleSubmit(onSubmit)}
                 className="space-y-6"
               >
                 <FormField
-                  control={requestForm.control}
+                  control={form.control}
                   name="email"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Email</FormLabel>
+                      <FormLabel htmlFor="email">Email</FormLabel>
                       <FormControl>
                         <Input
+                          id="email"
+                          placeholder="your.email@example.com"
                           type="email"
                           autoComplete="email"
+                          aria-describedby="email-description"
                           disabled={loading}
                           {...field}
                           ref={(e) => {
                             field.ref(e);
-                            emailInputRef.current = e;
+                            if (emailInputRef.current !== e) {
+                              emailInputRef.current = e;
+                            }
                           }}
                         />
                       </FormControl>
+                      <FormDescription
+                        id="email-description"
+                        className="sr-only"
+                      >
+                        Enter the email address associated with your account
+                      </FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
+
                 <Button
                   type="submit"
                   className="w-full"
-                  disabled={loading || !requestForm.formState.isValid}
+                  disabled={loading || !form.formState.isValid}
+                  aria-disabled={loading || !form.formState.isValid}
                 >
                   {loading ? (
-                    <Spinner className="mr-2 h-4 w-4" />
+                    <>
+                      <Spinner className="mr-2 h-4 w-4" aria-hidden="true" />
+                      <span>Sending...</span>
+                    </>
                   ) : (
                     "Send Reset Link"
                   )}
                 </Button>
               </form>
             </Form>
-          </>
-        ) : (
-          <>
-            <p className="mb-6 text-gray-600">
-              We've sent a verification code to your email. Enter it below along
-              with your new password.
-            </p>
 
-            <Form {...confirmForm}>
-              <form
-                onSubmit={confirmForm.handleSubmit(handleConfirmReset)}
-                className="space-y-6"
-              >
-                <FormField
-                  control={confirmForm.control}
-                  name="code"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Verification Code</FormLabel>
-                      <FormControl>
-                        <Input
-                          type="text"
-                          autoComplete="off"
-                          disabled={loading}
-                          {...field}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={confirmForm.control}
-                  name="password"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>New Password</FormLabel>
-                      <FormControl>
-                        <Input
-                          type="password"
-                          autoComplete="new-password"
-                          disabled={loading}
-                          {...field}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={confirmForm.control}
-                  name="confirmPassword"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Confirm Password</FormLabel>
-                      <FormControl>
-                        <Input
-                          type="password"
-                          autoComplete="new-password"
-                          disabled={loading}
-                          {...field}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <Button
-                  type="submit"
-                  className="w-full"
-                  disabled={loading || !confirmForm.formState.isValid}
+            <div className="mt-6 text-center">
+              <p>
+                Remember your password?{" "}
+                <Link
+                  to="/login"
+                  className="text-blue-600 hover:text-blue-800 hover:underline"
+                  tabIndex={0}
                 >
-                  {loading ? (
-                    <Spinner className="mr-2 h-4 w-4" />
-                  ) : (
-                    "Reset Password"
-                  )}
-                </Button>
-              </form>
-            </Form>
+                  Sign in
+                </Link>
+              </p>
+              <p className="mt-2">
+                Already have a code?{" "}
+                <Link
+                  to="/reset-password"
+                  className="text-blue-600 hover:text-blue-800 hover:underline"
+                  tabIndex={0}
+                >
+                  Reset your password
+                </Link>
+              </p>
+            </div>
           </>
         )}
-
-        <div className="mt-6 text-center">
-          <p>
-            Remember your password?{" "}
-            <Link
-              to="/login"
-              className="text-blue-600 hover:text-blue-800 hover:underline"
-            >
-              Sign in
-            </Link>
-          </p>
-        </div>
       </div>
     </div>
   );

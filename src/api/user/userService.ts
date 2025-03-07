@@ -51,10 +51,8 @@ export const signupUser = async (userData: Partial<User>): Promise<User> => {
       { user: userData },
       { withCredentials: true }
     );
-    console.log("response11111", response);
     return response.data.user;
   } catch (error: any) {
-    console.log("error22222", error);
     logError("Signup failed", error);
     throw new Error(
       error.response?.data?.error || "Signup failed. Please try again later."
@@ -101,7 +99,9 @@ export const fetchCurrentUser = async (): Promise<User | null> => {
   }
 };
 
-export const resetPassword = async (userData: Partial<User>): Promise<void> => {
+export const forgotPassword = async (
+  userData: Partial<User>
+): Promise<void> => {
   try {
     await api.post(
       "/api/v1/users/forgot-password",

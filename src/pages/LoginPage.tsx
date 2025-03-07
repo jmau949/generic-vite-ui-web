@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { useAuth } from "../auth/AuthProvider";
 import { Button } from "@/components/ui/button";
@@ -18,7 +18,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 
-// Define schema with more detailed validation messages
+// Define schema with detailed validation messages
 const loginSchema = z.object({
   email: z
     .string()
@@ -32,12 +32,11 @@ const loginSchema = z.object({
 
 type LoginFormValues = z.infer<typeof loginSchema>;
 
-// Custom hook for login logic
+// Custom hook for login logic (without lockout logic)
 const useLoginForm = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState<boolean>(false);
   const [loginError, setLoginError] = useState<string | null>(null);
-  const [loginAttempts, setLoginAttempts] = useState<number>(0);
   const { user, login } = useAuth();
 
   const form = useForm<LoginFormValues>({
@@ -49,60 +48,23 @@ const useLoginForm = () => {
     mode: "onChange", // Validate on change for immediate feedback
   });
 
-  const isLocked = loginAttempts >= 5;
-  const lockTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-
-  const resetLockout = useCallback(() => {
-    setLoginAttempts(0);
-    if (lockTimeoutRef.current) {
-      clearTimeout(lockTimeoutRef.current);
-      lockTimeoutRef.current = null;
-    }
-  }, []);
-
   useEffect(() => {
     // Redirect if user is already logged in
     if (user) {
       navigate("/");
     }
-
-    // Clean up any timeout on unmount
-    return () => {
-      if (lockTimeoutRef.current) {
-        clearTimeout(lockTimeoutRef.current);
-      }
-    };
-  }, [user, navigate, resetLockout]);
-
-  // Reset lockout after 15 minutes
-  useEffect(() => {
-    if (isLocked && !lockTimeoutRef.current) {
-      lockTimeoutRef.current = setTimeout(() => {
-        resetLockout();
-      }, 15 * 60 * 1000);
-    }
-  }, [isLocked, resetLockout]);
+  }, [user, navigate]);
 
   const onSubmit = async (data: LoginFormValues) => {
-    if (isLocked) {
-      setLoginError("Too many failed attempts. Please try again later.");
-      return;
-    }
-
     setLoading(true);
     setLoginError(null);
 
     try {
       await login(data.email, data.password);
-      // Reset login attempts on success
-      resetLockout();
       navigate("/");
     } catch (error: any) {
       console.error("Login error", error);
-      // Increment failed login attempts
-      setLoginAttempts((prev) => prev + 1);
 
-      // More specific error messages
       if (
         error.code === "auth/invalid-credential" ||
         error.code === "auth/user-not-found" ||
@@ -133,20 +95,17 @@ const useLoginForm = () => {
     form,
     loading,
     loginError,
-    isLocked,
     onSubmit,
   };
 };
 
 const LoginPage: React.FC = () => {
-  const { form, loading, loginError, isLocked, onSubmit } = useLoginForm();
+  const { form, loading, loginError, onSubmit } = useLoginForm();
   const emailInputRef = useRef<HTMLInputElement>(null);
 
   // Focus on email input when component mounts
   useEffect(() => {
-    if (emailInputRef.current) {
-      emailInputRef.current.focus();
-    }
+    emailInputRef.current?.focus();
   }, []);
 
   return (
@@ -157,15 +116,6 @@ const LoginPage: React.FC = () => {
         {loginError && (
           <Alert variant="destructive" className="mb-4">
             <AlertDescription>{loginError}</AlertDescription>
-          </Alert>
-        )}
-
-        {isLocked && (
-          <Alert variant="warning" className="mb-4">
-            <AlertDescription>
-              Your account has been temporarily locked due to multiple failed
-              login attempts. Please try again later or reset your password.
-            </AlertDescription>
           </Alert>
         )}
 
@@ -184,10 +134,9 @@ const LoginPage: React.FC = () => {
                       type="email"
                       autoComplete="email"
                       aria-describedby="email-description"
-                      disabled={loading || isLocked}
+                      disabled={loading}
                       {...field}
                       ref={(e) => {
-                        // Handle both the ref from react-hook-form and our custom ref
                         field.ref(e);
                         if (emailInputRef.current !== e) {
                           emailInputRef.current = e;
@@ -225,7 +174,7 @@ const LoginPage: React.FC = () => {
                       placeholder="••••••••"
                       autoComplete="current-password"
                       aria-describedby="password-description"
-                      disabled={loading || isLocked}
+                      disabled={loading}
                       {...field}
                     />
                   </FormControl>
@@ -243,8 +192,8 @@ const LoginPage: React.FC = () => {
             <Button
               type="submit"
               className="w-full"
-              disabled={loading || isLocked || !form.formState.isValid}
-              aria-disabled={loading || isLocked || !form.formState.isValid}
+              disabled={loading || !form.formState.isValid}
+              aria-disabled={loading || !form.formState.isValid}
             >
               {loading ? (
                 <>
