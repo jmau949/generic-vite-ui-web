@@ -9,10 +9,10 @@ export interface LoginCredentials {
 }
 
 export interface User {
-  sub: string;
+  sub?: string;
   email: string;
-  given_name?: string;
-  family_name?: string;
+  firstName?: string;
+  lastName?: string;
   [key: string]: any; // Allows additional properties from Cognito's response
 }
 
@@ -37,24 +37,27 @@ export const loginUser = async ({
   } catch (error: any) {
     logError("Login failed", error);
     throw new Error(
-      error.response?.data?.message || "Login failed. Please try again later."
+      error.response?.data?.error || "Login failed. Please try again later."
     );
   }
 };
 
 // Register a new user
-export const registerUser = async (userData: Partial<User>): Promise<User> => {
+export const signupUser = async (userData: Partial<User>): Promise<User> => {
   try {
+    console.log("userData", userData);
     const response = await api.post<{ user: User }>(
       "/api/v1/users",
       { user: userData },
       { withCredentials: true }
     );
+    console.log("response11111", response);
     return response.data.user;
   } catch (error: any) {
+    console.log("error22222", error);
     logError("Signup failed", error);
     throw new Error(
-      error.response?.data?.message || "Signup failed. Please try again later."
+      error.response?.data?.error || "Signup failed. Please try again later."
     );
   }
 };
@@ -71,7 +74,7 @@ export const updateUser = async (userData: Partial<User>): Promise<User> => {
   } catch (error: any) {
     logError("Update profile failed", error);
     throw new Error(
-      error.response?.data?.message || "Update failed. Please try again later."
+      error.response?.data?.error || "Update failed. Please try again later."
     );
   }
 };
@@ -95,5 +98,22 @@ export const fetchCurrentUser = async (): Promise<User | null> => {
     return data?.user || null;
   } catch (error: any) {
     return null;
+  }
+};
+
+export const resetPassword = async (userData: Partial<User>): Promise<void> => {
+  try {
+    console.log("userData", userData);
+    await api.post(
+      "/api/v1/users/forgot-password",
+      { user: userData },
+      { withCredentials: true }
+    );
+  } catch (error: any) {
+    logError("forgot password failed", error);
+    throw new Error(
+      error.response?.data?.error ||
+        "Password reset failed. Please try again later."
+    );
   }
 };
