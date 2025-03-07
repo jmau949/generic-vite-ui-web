@@ -103,7 +103,6 @@ export const fetchCurrentUser = async (): Promise<User | null> => {
 
 export const resetPassword = async (userData: Partial<User>): Promise<void> => {
   try {
-    console.log("userData", userData);
     await api.post(
       "/api/v1/users/forgot-password",
       { user: userData },
@@ -114,6 +113,24 @@ export const resetPassword = async (userData: Partial<User>): Promise<void> => {
     throw new Error(
       error.response?.data?.error ||
         "Password reset failed. Please try again later."
+    );
+  }
+};
+
+export const confirmForgotPassword = async (
+  userData: Partial<User>
+): Promise<void> => {
+  try {
+    await api.post(
+      "/api/v1/users/confirm-forgot-password",
+      { user: userData },
+      { withCredentials: true }
+    );
+  } catch (error: any) {
+    logError("confirm forgot password failed", error);
+    throw new Error(
+      error.response?.data?.error ||
+        "Password reset confirmation failed. Please try again later."
     );
   }
 };

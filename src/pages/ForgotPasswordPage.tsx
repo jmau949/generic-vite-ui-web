@@ -1,6 +1,5 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import { useAuth } from "../auth/AuthProvider";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Spinner } from "@/components/ui/spinner";
@@ -12,179 +11,247 @@ import {
   FormItem,
   FormMessage,
   FormLabel,
-  FormDescription,
 } from "@/components/ui/form";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { resetPassword } from "@/api/user/userService";
+import { resetPassword, confirmForgotPassword } from "@/api/user/userService";
 
-// Form validation schema
-const forgotPasswordSchema = z.object({
+// Form validation schemas
+const requestSchema = z.object({
   email: z
     .string()
     .min(1, { message: "Email is required" })
     .email({ message: "Please enter a valid email address" }),
 });
 
-type ForgotPasswordFormValues = z.infer<typeof forgotPasswordSchema>;
+const confirmSchema = z
+  .object({
+    code: z.string().min(6, { message: "Code must be 6 characters" }),
+    password: z
+      .string()
+      .min(8, { message: "Password must be at least 8 characters" }),
+    confirmPassword: z.string(),
+  })
+  .refine((data) => data.password === data.confirmPassword, {
+    message: "Passwords do not match",
+    path: ["confirmPassword"],
+  });
 
-// Custom hook for forgot password logic
-const useForgotPasswordForm = () => {
+type RequestFormValues = z.infer<typeof requestSchema>;
+type ConfirmFormValues = z.infer<typeof confirmSchema>;
+
+const ForgotPasswordPage: React.FC = () => {
   const navigate = useNavigate();
-  const [loading, setLoading] = useState<boolean>(false);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState<boolean>(false);
+  const [resetStep, setResetStep] = useState<"request" | "confirm">("request");
+  const [email, setEmail] = useState<string>("");
+  const emailInputRef = useRef<HTMLInputElement>(null);
 
-  const form = useForm<ForgotPasswordFormValues>({
-    resolver: zodResolver(forgotPasswordSchema),
-    defaultValues: {
-      email: "",
-    },
+  // Request form
+  const requestForm = useForm<RequestFormValues>({
+    resolver: zodResolver(requestSchema),
+    defaultValues: { email: "" },
     mode: "onChange",
   });
 
-  const onSubmit = async (data: ForgotPasswordFormValues) => {
+  // Confirm form
+  const confirmForm = useForm<ConfirmFormValues>({
+    resolver: zodResolver(confirmSchema),
+    defaultValues: { code: "", password: "", confirmPassword: "" },
+    mode: "onChange",
+  });
+
+  // Focus email input on initial render
+  useEffect(() => {
+    emailInputRef.current?.focus();
+  }, []);
+
+  useEffect(() => {
+    console.log("email", email);
+  });
+  // Handle request password reset
+  const handleRequestReset = async (data: RequestFormValues) => {
     setLoading(true);
     setError(null);
-    setSuccess(false);
 
     try {
-      await resetPassword({ email: data.email });
-      setSuccess(true);
-      // Optional: clear form after successful submission
-      form.reset();
+      // await resetPassword({ email: data.email });
+      setEmail(data.email);
+      setResetStep("confirm");
     } catch (error: any) {
-      console.error("Password reset error:", error);
-      console.log("error.message", error.message);
+      // Don't reveal if email exists for security
+      if (error.message?.includes("no registered/verified email")) {
+        setResetStep("confirm");
+        return;
+      }
 
-      // Extract error message
-      const errorMessage: string =
-        error.message || "An unknown error occurred.";
-
-      // Define default error message
+      // Error message handling
       let userFriendlyMessage =
         "Failed to send password reset email. Please try again.";
 
-      // Handle specific Cognito error messages
-      if (errorMessage.includes("no registered/verified email")) {
-        setSuccess(true); // Don't reveal if email exists
-        return;
-      } else if (errorMessage.includes("Invalid parameter in request")) {
+      if (error.message?.includes("Invalid parameter in request")) {
         userFriendlyMessage = "The email address is invalid.";
-      } else if (errorMessage.includes("Attempt limit exceeded")) {
+      } else if (error.message?.includes("Attempt limit exceeded")) {
         userFriendlyMessage = "Too many requests. Please try again later.";
-      } else if (errorMessage.includes("Network error")) {
+      } else if (error.message?.includes("Network error")) {
         userFriendlyMessage =
           "Network error. Please check your connection and try again.";
       }
 
-      // Set sanitized error message
       setError(userFriendlyMessage);
     } finally {
       setLoading(false);
     }
   };
 
-  return {
-    form,
-    loading,
-    error,
-    success,
-    setSuccess,
-    onSubmit,
-  };
-};
+  // Handle confirm password reset
+  const handleConfirmReset = async (data: ConfirmFormValues) => {
+    setLoading(true);
+    setError(null);
 
-const ForgotPasswordPage: React.FC = () => {
-  const { form, loading, error, success, setSuccess, onSubmit } =
-    useForgotPasswordForm();
-  const emailInputRef = useRef<HTMLInputElement>(null);
-
-  // Focus on email input when component mounts
-  useEffect(() => {
-    if (emailInputRef.current) {
-      emailInputRef.current.focus();
+    try {
+      await confirmForgotPassword({
+        email,
+        code: data.code,
+        password: data.password,
+      });
+      navigate("/login");
+    } catch (error: any) {
+      setError(error.message || "Failed to reset password.");
+    } finally {
+      setLoading(false);
     }
-  }, []);
+  };
 
   return (
     <div className="flex justify-center items-center min-h-screen bg-gray-100">
       <div className="w-full max-w-md p-8 bg-white rounded-lg shadow-md">
-        <h1 className="mb-6 text-2xl font-bold text-center">Reset Password</h1>
+        <h1 className="mb-6 text-2xl font-bold text-center">
+          {resetStep === "request"
+            ? "Reset Password"
+            : "Enter Verification Code"}
+        </h1>
 
-        {success ? (
-          <div className="space-y-6">
-            <Alert variant="success" className="mb-4">
-              <AlertDescription>
-                If an account exists with this email, we've sent you
-                instructions to reset your password. Please check your inbox and
-                spam folder.
-              </AlertDescription>
-            </Alert>
-            <div className="flex flex-col space-y-4">
-              <Button onClick={() => navigate("/login")} className="w-full">
-                Return to Login
-              </Button>
-              <Button
-                onClick={() => {
-                  setSuccess(false);
-                  form.reset();
-                }}
-                variant="outline"
-                className="w-full"
-              >
-                Send Another Reset Link
-              </Button>
-            </div>
-          </div>
-        ) : (
+        {error && (
+          <Alert variant="destructive" className="mb-4">
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
+        )}
+
+        {resetStep === "request" ? (
           <>
             <p className="mb-6 text-gray-600">
               Enter your email address and we'll send you instructions to reset
               your password.
             </p>
 
-            {error && (
-              <Alert variant="destructive" className="mb-4">
-                <AlertDescription>{error}</AlertDescription>
-              </Alert>
-            )}
-
-            <Form {...form}>
+            <Form {...requestForm}>
               <form
-                onSubmit={form.handleSubmit(onSubmit)}
+                onSubmit={requestForm.handleSubmit(handleRequestReset)}
                 className="space-y-6"
               >
                 <FormField
-                  control={form.control}
+                  control={requestForm.control}
                   name="email"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel htmlFor="email">Email</FormLabel>
+                      <FormLabel>Email</FormLabel>
                       <FormControl>
                         <Input
-                          id="email"
-                          placeholder="your.email@example.com"
                           type="email"
                           autoComplete="email"
-                          aria-describedby="email-description"
                           disabled={loading}
                           {...field}
                           ref={(e) => {
                             field.ref(e);
-                            if (emailInputRef.current !== e) {
-                              emailInputRef.current = e;
-                            }
+                            emailInputRef.current = e;
                           }}
                         />
                       </FormControl>
-                      <FormDescription
-                        id="email-description"
-                        className="sr-only"
-                      >
-                        Enter the email address associated with your account
-                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <Button
+                  type="submit"
+                  className="w-full"
+                  disabled={loading || !requestForm.formState.isValid}
+                >
+                  {loading ? (
+                    <Spinner className="mr-2 h-4 w-4" />
+                  ) : (
+                    "Send Reset Link"
+                  )}
+                </Button>
+              </form>
+            </Form>
+          </>
+        ) : (
+          <>
+            <p className="mb-6 text-gray-600">
+              We've sent a verification code to your email. Enter it below along
+              with your new password.
+            </p>
+
+            <Form {...confirmForm}>
+              <form
+                onSubmit={confirmForm.handleSubmit(handleConfirmReset)}
+                className="space-y-6"
+              >
+                <FormField
+                  control={confirmForm.control}
+                  name="code"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Verification Code</FormLabel>
+                      <FormControl>
+                        <Input
+                          type="text"
+                          autoComplete="off"
+                          disabled={loading}
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={confirmForm.control}
+                  name="password"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>New Password</FormLabel>
+                      <FormControl>
+                        <Input
+                          type="password"
+                          autoComplete="new-password"
+                          disabled={loading}
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={confirmForm.control}
+                  name="confirmPassword"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Confirm Password</FormLabel>
+                      <FormControl>
+                        <Input
+                          type="password"
+                          autoComplete="new-password"
+                          disabled={loading}
+                          {...field}
+                        />
+                      </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -193,35 +260,30 @@ const ForgotPasswordPage: React.FC = () => {
                 <Button
                   type="submit"
                   className="w-full"
-                  disabled={loading || !form.formState.isValid}
-                  aria-disabled={loading || !form.formState.isValid}
+                  disabled={loading || !confirmForm.formState.isValid}
                 >
                   {loading ? (
-                    <>
-                      <Spinner className="mr-2 h-4 w-4" aria-hidden="true" />
-                      <span>Sending...</span>
-                    </>
+                    <Spinner className="mr-2 h-4 w-4" />
                   ) : (
-                    "Send Reset Link"
+                    "Reset Password"
                   )}
                 </Button>
               </form>
             </Form>
-
-            <div className="mt-6 text-center">
-              <p>
-                Remember your password?{" "}
-                <Link
-                  to="/login"
-                  className="text-blue-600 hover:text-blue-800 hover:underline"
-                  tabIndex={0}
-                >
-                  Sign in
-                </Link>
-              </p>
-            </div>
           </>
         )}
+
+        <div className="mt-6 text-center">
+          <p>
+            Remember your password?{" "}
+            <Link
+              to="/login"
+              className="text-blue-600 hover:text-blue-800 hover:underline"
+            >
+              Sign in
+            </Link>
+          </p>
+        </div>
       </div>
     </div>
   );
