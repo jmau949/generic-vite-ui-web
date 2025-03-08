@@ -4,6 +4,6 @@ export const logError = (error: unknown, customMessage: string = ""): void => {
 };
 
 export const notifyAdmin = (message: string, error: unknown): void => {
-  // console.log("Notify admin: ", message, error);
+  console.log("Notify admin: ", message, error);
   // Implement your notification logic here (e.g., sending alerts to monitoring tools like CloudWatch)
 };

@@ -1,7 +1,5 @@
-import React, { useEffect } from "react";
+import React from "react";
 import MetaTags from "../components/MetaTags";
-import { useAuth } from "@/auth/AuthProvider";
-
 const HomePage: React.FC = () => {
   return (
     <div>

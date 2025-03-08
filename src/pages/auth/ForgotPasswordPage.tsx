@@ -1,6 +1,5 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import { useAuth } from "../auth/AuthProvider";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Spinner } from "@/components/ui/spinner";
@@ -32,7 +31,6 @@ type ForgotPasswordFormValues = z.infer<typeof forgotPasswordSchema>;
 
 // Custom hook for forgot password logic
 const useForgotPasswordForm = () => {
-  const navigate = useNavigate();
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<boolean>(false);
@@ -121,7 +119,7 @@ const ForgotPasswordPage: React.FC = () => {
 
         {success ? (
           <div className="space-y-6">
-            <Alert variant="success" className="mb-4">
+            <Alert variant="default" className="mb-4">
               <AlertDescription>
                 If an account exists with this email, we've sent you
                 instructions to reset your password. Please check your inbox and

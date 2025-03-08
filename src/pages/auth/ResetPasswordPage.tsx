@@ -152,7 +152,7 @@ const ResetPasswordPage: React.FC = () => {
 
         {success ? (
           <div className="space-y-6">
-            <Alert variant="success" className="mb-4">
+            <Alert variant="default" className="mb-4">
               <AlertDescription>
                 Your password has been successfully reset. You can now log in
                 with your new password.

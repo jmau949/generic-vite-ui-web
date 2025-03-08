@@ -26,7 +26,11 @@ export function initSentry(): void {
         const error = hint?.originalException;
         if (error && typeof error === "object" && "message" in error) {
           // Example: ignore "Network request failed" errors
-          if (error.message.includes("Network request failed")) {
+          const message = (error as { message: unknown }).message;
+          if (
+            typeof message === "string" &&
+            message.includes("Network request failed")
+          ) {
             return null;
           }
         }
