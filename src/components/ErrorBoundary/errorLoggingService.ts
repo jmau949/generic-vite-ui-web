@@ -1,5 +1,6 @@
 // Import the ErrorInfo type from React which provides details about the error in the component tree.
 import { ErrorInfo } from "react";
+import * as Sentry from "@sentry/react";
 
 /**
  * Interface defining the shape of the error log data.
@@ -38,8 +39,7 @@ class ErrorLoggingService {
    * Initialization logic for error logging services (like Sentry or LogRocket) can be placed here.
    */
   private constructor() {
-    // Initialize any error logging service connections here.
-    // For example, you might configure third-party logging services such as Sentry or LogRocket.
+    // Additional initialization if needed
   }
 
   /**
@@ -67,7 +67,8 @@ class ErrorLoggingService {
   public logError(
     error: Error,
     errorInfo?: ErrorInfo | null,
-    context?: Record<string, unknown>
+    context?: Record<string, unknown>,
+    userId?: string // Accept userId parameter (email)
   ): void {
     // Log the error to the console.
     console.error("Error caught by error logging service:", error);
@@ -77,22 +78,36 @@ class ErrorLoggingService {
       console.error("Component stack:", errorInfo.componentStack);
     }
 
-    // If running in development, simply log to the console without sending data to an external service.
-    if (import.meta.env.NODE_ENV === "development") {
+    // sentry will not be initialized in development, but logging service might be
+    if (import.meta.env.MODE === "development") {
+      console.log("not sending to sentry/logging service");
       return;
     }
 
-    // In production, send the error log to the external logging service.
-    this.sendToLoggingService({
+    const logData: ErrorLogData = {
       error,
       errorInfo,
       context,
+      userId,
       timestamp: new Date().toISOString(),
-      // Optionally, include the user ID by retrieving it from an authentication service.
-      // userId: AuthService.getUserId(),
+    };
+    // send react-error-boundary caught error to sentry
+
+    console.log("sending to sentry, log service", logData);
+    this.sendToSentry(logData);
+
+    // In production, send the error log to the external logging service. (splunk, datadog)
+    this.sendToLoggingService(logData);
+  }
+  private sendToSentry(logData: ErrorLogData): void {
+    Sentry.captureException(logData.error, {
+      extra: {
+        componentStack: logData.errorInfo?.componentStack,
+        ...logData.context,
+        userId: logData.userId, // Send userId to Sentry
+      },
     });
   }
-
   /**
    * Private method to send the error log data to an external logging service.
    * This method abstracts the implementation of sending the log data.
@@ -107,18 +122,11 @@ class ErrorLoggingService {
         headers: {
           "Content-Type": "application/json", // Specify that the request body is JSON.
         },
-        body: JSON.stringify({
-          message: logData.error.message,
-          stack: logData.error.stack,
-          componentStack: logData.errorInfo?.componentStack,
-          context: logData.context,
-          userId: logData.userId,
-          timestamp: logData.timestamp,
-        }),
+        body: JSON.stringify(logData),
       }).catch((err) => {
         // If sending the error log fails, handle the error.
         // In production, fail silently; in development, log the failure.
-        if (import.meta.env.NODE_ENV === "development") {
+        if (import.meta.env.MODE === "development") {
           console.error("development err:", err);
         }
       });

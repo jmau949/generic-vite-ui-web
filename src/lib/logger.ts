@@ -8,7 +8,7 @@ interface LogEntry {
 }
 
 class Logger {
-  private isProd = process.env.NODE_ENV === "production";
+  private isProd = import.meta.env.MODE === "production";
 
   info(message: string, data?: any) {
     this.log("info", message, data);

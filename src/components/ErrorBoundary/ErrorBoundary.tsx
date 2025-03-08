@@ -18,7 +18,9 @@ const ErrorBoundary: React.FC<ErrorBoundaryProps> = ({
       }
       onError={(error, info) => {
         // Log the error to your error tracking service
-        ErrorLoggingService.logError(error, info);
+        ErrorLoggingService.logError(error, info, {
+          source: "react-error-boundary",
+        });
       }}
     >
       {children}

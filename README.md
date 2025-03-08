@@ -120,6 +120,10 @@ Create a `.env.local` file and configure the necessary environment variables:
 VITE_REQUEST_TIMEOUT=10000
 VITE_MAX_RETRIES=3
 VITE_API_BASE_URL=http://localhost:3010
+
+VITE_SENTRY_AUTH_TOKEN=value
+VITE_SENTRY_DSN=value
+VITE_APP_VERSION=1.0.0
 ```
 
 ## Development

@@ -17,6 +17,7 @@ import {
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
+import { useErrorHandler } from "@/hooks/useErrorHandler";
 
 // Define schema with detailed validation messages
 const loginSchema = z.object({
@@ -54,7 +55,13 @@ const useLoginForm = () => {
       navigate("/");
     }
   }, [user, navigate]);
-
+  const handleError = useErrorHandler({ component: "LoginPage" });
+  const commonErrorCodes = [
+    "UserNotConfirmedException",
+    "PasswordResetRequiredException",
+    "NotAuthorizedException",
+    "UserNotFoundException",
+  ];
   const onSubmit = async (data: LoginFormValues) => {
     setLoading(true);
     setLoginError(null);
@@ -63,17 +70,22 @@ const useLoginForm = () => {
       navigate("/");
     } catch (error: any) {
       if (error?.message?.includes("User not confirmed")) {
-        // Navigate to confirm email page, passing along the email and password
-        navigate("/confirm-email", {
-          state: { email: data.email },
-        });
+        // Navigate to confirm email page, passing along the email
+        navigate("/confirm-email", { state: { email: data.email } });
+        return; // Early return to avoid further error processing
       }
       if (error?.message?.includes("Password reset required")) {
-        navigate("/reset-password", {
-          state: { email: data.email },
-        });
+        // Navigate to reset password page, passing along the email
+        navigate("/reset-password", { state: { email: data.email } });
+        return; // Early return
       }
       setLoginError(error.message || "An unexpected error occurred");
+
+      // Check error.errorCode against common Cognito exceptions
+
+      if (error.errorCode && !commonErrorCodes.includes(error.errorCode)) {
+        handleError(error, "login");
+      }
     } finally {
       setLoading(false);
     }

@@ -20,6 +20,7 @@ import {
   logoutUser,
   resendConfirmationCode,
 } from "@/api/user/userService";
+import { useErrorHandler } from "@/hooks/useErrorHandler";
 
 const ConfirmEmailPage: React.FC = () => {
   const navigate = useNavigate();
@@ -41,7 +42,7 @@ const ConfirmEmailPage: React.FC = () => {
       navigate("/");
     }
   }, [user, navigate]);
-
+  const handleError = useErrorHandler({ component: "ConfirmEmailPage" });
   // Function to verify email with code
   const handleVerifyEmail = async () => {
     if (!confirmationCode.trim()) {
@@ -67,10 +68,13 @@ const ConfirmEmailPage: React.FC = () => {
         setStatusMessage(
           "Verification code has expired. Please request a new one."
         );
+      } else if (error.code === "UserNotFoundException") {
+        setStatusMessage("User Not Found");
       } else {
         setStatusMessage(
           error.message || "An error occurred during verification"
         );
+        handleError(error, "confirmUserAfterSignUp");
       }
     } finally {
       setLoading(false);

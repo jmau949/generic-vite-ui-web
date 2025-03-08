@@ -16,6 +16,7 @@ import { useForm } from "react-hook-form";
 import { signupUser } from "../../api/user/userService";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
+import { useErrorHandler } from "@/hooks/useErrorHandler";
 
 const signupSchema = z
   .object({
@@ -74,7 +75,14 @@ const useSignupForm = () => {
   useEffect(() => {
     if (user) navigate("/");
   }, [user, navigate]);
-
+  const COMMON_ERROR_CODES = [
+    "UsernameExistsException",
+    "InvalidPasswordException",
+    "InvalidParameterException",
+    "TooManyRequestsException",
+    "LimitExceededException",
+  ];
+  const handleError = useErrorHandler({ component: "SignUpPage" });
   const onSubmit = async (data: {
     email: string;
     firstName: string;
@@ -96,6 +104,9 @@ const useSignupForm = () => {
       });
     } catch (error: any) {
       setSignupError(error.message || "An unexpected error occurred");
+      if (!COMMON_ERROR_CODES.includes(error.errorCode)) {
+        handleError(error, "signupUser");
+      }
     } finally {
       setLoading(false);
     }

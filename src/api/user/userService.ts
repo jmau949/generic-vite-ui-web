@@ -1,6 +1,5 @@
 import { api } from "../api";
-import { logError } from "../../utils/errorHandling";
-import { validateEmail, validatePassword } from "../../utils/validation";
+import { handleApiError } from "@/lib/utils";
 
 // Define types for user authentication
 export interface LoginCredentials {
@@ -21,12 +20,6 @@ export const loginUser = async ({
   email,
   password,
 }: LoginCredentials): Promise<User> => {
-  if (!validateEmail(email)) {
-    throw new Error("Invalid email format.");
-  }
-  if (!validatePassword(password)) {
-    throw new Error("Password must be at least 8 characters.");
-  }
   try {
     const response = await api.post<{ user: User }>(
       "/api/v1/users/login",
@@ -35,17 +28,15 @@ export const loginUser = async ({
     );
     return response.data.user;
   } catch (error: any) {
-    logError("Login failed", error);
-    throw new Error(
-      error.response?.data?.error || "Login failed. Please try again later."
-    );
+
+    handleApiError(error, "Login failed. Please try again later.");
+    throw error;
   }
 };
 
 // Register a new user
 export const signupUser = async (userData: Partial<User>): Promise<User> => {
   try {
-    console.log("userData", userData);
     const response = await api.post<{ user: User }>(
       "/api/v1/users",
       { user: userData },
@@ -53,38 +44,33 @@ export const signupUser = async (userData: Partial<User>): Promise<User> => {
     );
     return response.data.user;
   } catch (error: any) {
-    logError("Signup failed", error);
-    throw new Error(
-      error.response?.data?.error || "Signup failed. Please try again later."
-    );
+    handleApiError(error, "Signup failed. Please try again later.");
+    throw error;
   }
 };
 
 //confirm user after sign up
 export const confirmUserAfterSignUp = async (
-  email:string, confirmationCode:string
+  email: string,
+  confirmationCode: string
 ): Promise<void> => {
-
   try {
     await api.post<{ user: User }>(
       "/api/v1/users/confirm",
-      { user: {
-        email, 
-        confirmationCode
-      }
-       },
+      {
+        user: {
+          email,
+          confirmationCode,
+        },
+      },
       { withCredentials: true }
     );
 
-    return 
+    return;
   } catch (error: any) {
-    logError("Signup failed", error);
-    throw new Error(
-      error.response?.data?.error || "Signup failed. Please try again later."
-    );
+    handleApiError(error, "Confirmation failed. Please try again later.");
   }
 };
-
 
 // Update a user's profile
 export const updateUser = async (userData: Partial<User>): Promise<User> => {
@@ -96,10 +82,7 @@ export const updateUser = async (userData: Partial<User>): Promise<User> => {
     );
     return response.data.user;
   } catch (error: any) {
-    logError("Update profile failed", error);
-    throw new Error(
-      error.response?.data?.error || "Update failed. Please try again later."
-    );
+    handleApiError(error, "Update failed. Please try again later.");
   }
 };
 
@@ -108,7 +91,6 @@ export const logoutUser = async (): Promise<void> => {
   try {
     await api.post("/api/v1/users/logout", {}, { withCredentials: true });
   } catch (error: any) {
-    logError("Logout failed", error);
     throw error;
   }
 };
@@ -121,7 +103,6 @@ export const fetchCurrentUser = async (): Promise<User | null> => {
     });
     return data?.user || null;
   } catch (error: any) {
-    console.log('error', error)
     return null;
   }
 };
@@ -136,11 +117,7 @@ export const forgotPassword = async (
       { withCredentials: true }
     );
   } catch (error: any) {
-    logError("forgot password failed", error);
-    throw new Error(
-      error.response?.data?.error ||
-        "Password reset failed. Please try again later."
-    );
+    handleApiError(error, "Password reset failed. Please try again later.");
   }
 };
 
@@ -152,10 +129,9 @@ export const resendConfirmationCode = async (email: string): Promise<void> => {
       { withCredentials: true }
     );
   } catch (error: any) {
-    logError("re send confirmation code error", error);
-    throw new Error(
-      error.response?.data?.error ||
-        "Password reset confirmation failed. Please try again later."
+    handleApiError(
+      error,
+      "Resend confirmation code failed. Please try again later."
     );
   }
 };
@@ -170,10 +146,9 @@ export const confirmForgotPassword = async (
       { withCredentials: true }
     );
   } catch (error: any) {
-    logError("confirm forgot password failed", error);
-    throw new Error(
-      error.response?.data?.error ||
-        "Password reset confirmation failed. Please try again later."
+    handleApiError(
+      error,
+      "Password reset confirmation failed. Please try again later."
     );
   }
 };

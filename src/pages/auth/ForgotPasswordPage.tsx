@@ -18,6 +18,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { forgotPassword } from "@/api/user/userService";
+import { useErrorHandler } from "@/hooks/useErrorHandler";
 
 // Form validation schema
 const forgotPasswordSchema = z.object({
@@ -43,7 +44,7 @@ const useForgotPasswordForm = () => {
     },
     mode: "onChange",
   });
-
+  const handleError = useErrorHandler({ component: "ForgotPasswordPage" });
   const onSubmit = async (data: ForgotPasswordFormValues) => {
     setLoading(true);
     setError(null);
@@ -55,28 +56,30 @@ const useForgotPasswordForm = () => {
       // Optional: clear form after successful submission
       // form.reset(); - Commented out to keep email for navigation
     } catch (error: any) {
-      // Extract error message
-      const errorMessage: string =
-        error.message || "An unknown error occurred.";
+      // Use error.errorCode instead of error.message
+      const errorCode: string = error.errorCode || "UnknownError";
 
-      // Define default error message
+      // Define a default user-friendly message
       let userFriendlyMessage =
         "Failed to send password reset email. Please try again.";
 
-      // Handle specific Cognito error messages
-      if (errorMessage.includes("no registered/verified email")) {
-        setSuccess(true); // Don't reveal if email exists
+      // Handle specific Cognito error codes
+      if (errorCode === "UserNotFoundException") {
+        // If the email isn't registered, indicate success to avoid revealing user information
+        setSuccess(true);
         return;
-      } else if (errorMessage.includes("Invalid parameter in request")) {
+      } else if (errorCode === "InvalidParameterException") {
         userFriendlyMessage = "The email address is invalid.";
-      } else if (errorMessage.includes("Attempt limit exceeded")) {
+      } else if (errorCode === "LimitExceededException") {
         userFriendlyMessage = "Too many requests. Please try again later.";
-      } else if (errorMessage.includes("Network error")) {
+      } else if (errorCode === "NetworkError") {
         userFriendlyMessage =
           "Network error. Please check your connection and try again.";
+      } else {
+        handleError(error, "forgotPassword");
       }
 
-      // Set sanitized error message
+      // Set the user-friendly error message
       setError(userFriendlyMessage);
     } finally {
       setLoading(false);

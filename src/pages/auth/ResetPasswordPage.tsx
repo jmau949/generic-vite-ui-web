@@ -18,6 +18,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { confirmForgotPassword } from "@/api/user/userService";
+import { useErrorHandler } from "@/hooks/useErrorHandler";
 
 // Form validation schema
 const resetPasswordSchema = z
@@ -70,7 +71,7 @@ const useResetPasswordForm = (defaultEmail: string = "") => {
     },
     mode: "onChange",
   });
-
+  const handleError = useErrorHandler({ component: "ResetPasswordPage" });
   const onSubmit = async (data: ResetPasswordFormValues) => {
     setLoading(true);
     setError(null);
@@ -83,33 +84,31 @@ const useResetPasswordForm = (defaultEmail: string = "") => {
       });
       setSuccess(true);
     } catch (error: any) {
-      console.error("Password reset confirmation error:", error);
-      errorLoggingService.logError(
-        error instanceof Error ? error : new Error(String(error)),
-        null,
-        { component: "PasswordReset", operation: "confirmForgotPassword" }
-      );
-
-      // Extract error message
-      const errorMessage: string =
-        error.message || "An unknown error occurred.";
+      // Use error.errorCode instead of error.message
+      const errorCode: string = error.errorCode || "UnknownError";
 
       // Define default error message
       let userFriendlyMessage = "Failed to reset password. Please try again.";
 
-      // Handle specific Cognito error messages
-      if (errorMessage.includes("Invalid verification code")) {
+      // Handle specific Cognito error codes
+      if (
+        errorCode === "CodeMismatchException" ||
+        errorCode === "ExpiredCodeException"
+      ) {
         userFriendlyMessage =
           "The verification code is invalid or has expired.";
-      } else if (errorMessage.includes("Password does not conform to policy")) {
+      } else if (
+        errorCode === "InvalidPasswordException" ||
+        errorCode === "InvalidParameterException"
+      ) {
         userFriendlyMessage =
           "Your password doesn't meet the requirements. Please try a different password.";
-      } else if (errorMessage.includes("Invalid code provided")) {
-        userFriendlyMessage =
-          "Invalid verification code. Please check and try again.";
-      } else if (errorMessage.includes("Network error")) {
+      } else if (errorCode === "NetworkError") {
         userFriendlyMessage =
           "Network error. Please check your connection and try again.";
+      } else {
+        // For unexpected errors, report them via your error handling routine
+        handleError(error, "confirmForgotPassword");
       }
 
       setError(userFriendlyMessage);
