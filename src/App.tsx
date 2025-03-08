@@ -14,7 +14,7 @@ import ErrorBoundary from "./components/ErrorBoundary/ErrorBoundary";
 const App: React.FC = () => (
   <ErrorBoundary>
     <AuthProvider>
-      <Router>
+      <Router basename="/ai">
         <RootLayout>
           <Routes>
             <Route path="/login" element={<LoginPage />} />

@@ -43,6 +43,7 @@ export default defineConfig(({ mode }) => {
     build: {
       sourcemap: true,
     },
+    base: "/ai/",
     resolve: {
       alias: {
         "@": path.resolve(__dirname, "./src"),
