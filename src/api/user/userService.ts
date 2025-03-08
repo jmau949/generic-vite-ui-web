@@ -83,6 +83,7 @@ export const updateUser = async (userData: Partial<User>): Promise<User> => {
     return response.data.user;
   } catch (error: any) {
     handleApiError(error, "Update failed. Please try again later.");
+    throw error;
   }
 };
 

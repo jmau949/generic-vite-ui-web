@@ -42,7 +42,7 @@ api.interceptors.response.use(
     // This typically indicates that the user's session has expired or they are not properly authenticated
     if (error.response?.status === 401) {
       // Log the error with a custom message about session expiration or unauthorized access
-      logError("Session expired or unauthorized access", error);
+      logError("Session expired or unauthorized access", error.toString());
       // Call the logoutUser function to clear the user session
       await logoutUser();
       // Reject the promise with a new error message prompting the user to log in again
@@ -55,7 +55,7 @@ api.interceptors.response.use(
     // and ensure the request is eligible for a retry (i.e., it hasn't been flagged to skip retries)
     if (
       error.response?.status === 429 ||
-      (error.response?.status >= 500 && originalRequest?.retry !== false)
+      ((error.response?.status ?? 0) >= 500 && originalRequest?.retry !== false)
     ) {
       // Initialize or retrieve the retry counter for this request; default to 0 if not already set
       originalRequest._retry = originalRequest._retry || 0;
@@ -79,7 +79,7 @@ api.interceptors.response.use(
     // or if the error message mentions "timeout"
     if (error.code === "ECONNABORTED" || error.message?.includes("timeout")) {
       // Log the timeout error with a custom message
-      logError("Request timed out:", error);
+      logError("Request timed out:", error.toString());
       // Reject the promise with a new error message to inform the caller of the timeout
       return Promise.reject(
         new Error(
