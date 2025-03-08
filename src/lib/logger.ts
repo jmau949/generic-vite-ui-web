@@ -1,11 +1,11 @@
 type LogLevel = "info" | "warn" | "error" | "debug";
 
-interface LogEntry {
-  message: string;
-  level: LogLevel;
-  timestamp: string;
-  data?: any;
-}
+// interface LogEntry {
+//   message: string;
+//   level: LogLevel;
+//   timestamp: string;
+//   data?: any;
+// }
 
 class Logger {
   private isProd = import.meta.env.MODE === "production";
@@ -27,12 +27,12 @@ class Logger {
   }
 
   private log(level: LogLevel, message: string, data?: any) {
-    const entry: LogEntry = {
-      message,
-      level,
-      timestamp: new Date().toISOString(),
-      data,
-    };
+    // const entry: LogEntry = {
+    //   message,
+    //   level,
+    //   timestamp: new Date().toISOString(),
+    //   data,
+    // };
 
     if (this.isProd) {
       // In production, send logs to your logging service
@@ -61,14 +61,14 @@ class Logger {
     }
   }
 
-  // Send logs to a centralized logging service in production
-  private sendToLogService(entry: LogEntry) {
-    // Implementation depends on your logging service
-    // e.g., fetch('/api/logs', {
-    //   method: 'POST',
-    //   body: JSON.stringify(entry)
-    // });
-  }
+  // // Send logs to a centralized logging service in production
+  // private sendToLogService(entry: LogEntry) {
+  //   // Implementation depends on your logging service
+  //   // e.g., fetch('/api/logs', {
+  //   //   method: 'POST',
+  //   //   body: JSON.stringify(entry)
+  //   // });
+  // }
 }
 
 export const logger = new Logger();

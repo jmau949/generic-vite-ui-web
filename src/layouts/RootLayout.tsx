@@ -1,4 +1,4 @@
-import React, { ReactNode, useState, useEffect } from "react";
+import React, { ReactNode } from "react";
 // import { clsx } from "clsx";
 // import { getTheme } from "@/actions/settings-actions";
 // import { Theme } from '@/types/settings';

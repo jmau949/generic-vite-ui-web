@@ -14,10 +14,10 @@ export default defineConfig(({ mode }) => {
       tailwindcss(),
       sentryVitePlugin({
         // Your Sentry organization name (found in Sentry dashboard URL)
-        org: "REPLACEME",
+        org: "jonathan-mau",
 
         // Your Sentry project name (found in Sentry dashboard)
-        project: "REPLACEME",
+        project: "ui-web-deepseek", // REPLACEME
 
         // Auth token from Sentry (create in User Settings > API Keys)
         // Best practice: Use environment variables instead of hardcoding
