@@ -48,7 +48,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 // With a 12-hour token, we can refresh when it's 90% through its lifetime
 // 12 hours * 90% = 10.8 hours = 10h48m = 648 minutes
-const TOKEN_REFRESH_THRESHOLD = 648 * 60 * 1000; // milliseconds
+const TOKEN_REFRESH_THRESHOLD = 4 * 60 * 1000; // milliseconds
 
 interface AuthProviderProps {
   children: ReactNode;
@@ -86,6 +86,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       const now = Date.now();
       setTokenIssueTime(now);
       localStorage.setItem("tokenIssueTime", now.toString());
+      console.log("Token refreshed successfully at:", new Date().toISOString());
 
       return true;
     } catch (error) {
@@ -103,7 +104,16 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     const now = Date.now();
     const timeSinceIssue = now - tokenIssueTime;
 
-    return timeSinceIssue > TOKEN_REFRESH_THRESHOLD;
+    const shouldRefresh = timeSinceIssue > TOKEN_REFRESH_THRESHOLD;
+    if (shouldRefresh) {
+      console.log(
+        "Token needs refresh. Age:",
+        Math.round(timeSinceIssue / 1000),
+        "seconds"
+      );
+    }
+
+    return shouldRefresh;
   }, [tokenIssueTime]);
 
   // Initialize auth state
@@ -202,7 +212,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       if (shouldRefreshToken()) {
         refreshSession();
       }
-    }, 60 * 60 * 1000); // Check once per hour
+    }, 30 * 1000); // Check once per hour
 
     return () => clearInterval(tokenCheckInterval);
   }, [authState.status, refreshSession, shouldRefreshToken]);
