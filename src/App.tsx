@@ -1,19 +1,27 @@
 import { BrowserRouter as Router, Route, Routes } from "react-router-dom";
+import { lazy, Suspense } from "react";
 import RootLayout from "./layouts/RootLayout";
-import HomePage from "./pages/HomePage";
-import LoginPage from "./pages/auth/LoginPage";
-import SignUpPage from "./pages/auth/SignUpPage";
-import ForgotPasswordPage from "./pages/auth/ForgotPasswordPage";
-import ConfirmEmailPage from "./pages/auth/ConfirmEmailPage";
-import ResetPasswordPage from "./pages/auth/ResetPasswordPage";
-import NotFoundPage from "./pages/errors/NotFoundPage";
 import PrivateRoute from "./components/PrivateRoute";
 import { AuthProvider } from "./auth/AuthProvider";
 import ErrorBoundary from "./components/ErrorBoundary/ErrorBoundary";
 import { Provider } from "react-redux";
 import { store, persistor } from "./redux/store";
 import { PersistGate } from "redux-persist/integration/react";
-import TestPage from "./pages/auth/TestPage";
+
+// Lazy-loaded components
+const HomePage = lazy(() => import("./pages/HomePage"));
+const LoginPage = lazy(() => import("./pages/auth/LoginPage"));
+const SignUpPage = lazy(() => import("./pages/auth/SignUpPage"));
+const ForgotPasswordPage = lazy(
+  () => import("./pages/auth/ForgotPasswordPage")
+);
+const ConfirmEmailPage = lazy(() => import("./pages/auth/ConfirmEmailPage"));
+const ResetPasswordPage = lazy(() => import("./pages/auth/ResetPasswordPage"));
+const NotFoundPage = lazy(() => import("./pages/errors/NotFoundPage"));
+const TestPage = lazy(() => import("./pages/auth/TestPage"));
+
+// Fallback UI while lazy-loaded components are loading
+const Loading = () => <div>Loading...</div>;
 
 const App: React.FC = () => (
   <ErrorBoundary>
@@ -22,33 +30,38 @@ const App: React.FC = () => (
         <AuthProvider>
           <Router>
             <RootLayout>
-              <Routes>
-                <Route path="/login" element={<LoginPage />} />
-                <Route path="/signup" element={<SignUpPage />} />
-                <Route
-                  path="/forgot-password"
-                  element={<ForgotPasswordPage />}
-                />
-                <Route path="/confirm-email" element={<ConfirmEmailPage />} />
-                <Route path="/reset-password" element={<ResetPasswordPage />} />
-                <Route
-                  path="/"
-                  element={
-                    <PrivateRoute>
-                      <HomePage />
-                    </PrivateRoute>
-                  }
-                />
-                <Route
-                  path="/test"
-                  element={
-                    <PrivateRoute>
-                      <TestPage />
-                    </PrivateRoute>
-                  }
-                />
-                <Route path="*" element={<NotFoundPage />} />
-              </Routes>
+              <Suspense fallback={<Loading />}>
+                <Routes>
+                  <Route path="/login" element={<LoginPage />} />
+                  <Route path="/signup" element={<SignUpPage />} />
+                  <Route
+                    path="/forgot-password"
+                    element={<ForgotPasswordPage />}
+                  />
+                  <Route path="/confirm-email" element={<ConfirmEmailPage />} />
+                  <Route
+                    path="/reset-password"
+                    element={<ResetPasswordPage />}
+                  />
+                  <Route
+                    path="/"
+                    element={
+                      <PrivateRoute>
+                        <HomePage />
+                      </PrivateRoute>
+                    }
+                  />
+                  <Route
+                    path="/test"
+                    element={
+                      <PrivateRoute>
+                        <TestPage />
+                      </PrivateRoute>
+                    }
+                  />
+                  <Route path="*" element={<NotFoundPage />} />
+                </Routes>
+              </Suspense>
             </RootLayout>
           </Router>
         </AuthProvider>
