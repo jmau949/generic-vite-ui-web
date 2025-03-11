@@ -1,6 +1,8 @@
 import React from "react";
 import MetaTags from "../components/MetaTags";
+import { useNavigate } from "react-router-dom";
 const HomePage: React.FC = () => {
+  const navigate = useNavigate();
   return (
     <div>
       {/*
@@ -24,6 +26,7 @@ const HomePage: React.FC = () => {
         twitterImageUrl="REPLACEME"
       />
       <h1>Welcome to REPLACEME</h1>
+      <button onClick={() => navigate("/test")}>testpage</button>
       <p>
         Transcribe and summarize your conversations with ease using Meta
         glasses.

@@ -6,81 +6,122 @@ import axios, {
 } from "axios";
 import { logError, notifyAdmin } from "../utils/errorHandling";
 import { logoutUser } from "./user/userService";
+import { refreshToken } from "./user/userService"; // Import refreshToken function
+
+// Flag to track if a token refresh is currently in progress
+let isRefreshingToken = false;
+// Queue to store requests that are waiting for the token refresh
+let refreshSubscribers: Array<() => void> = [];
 
 const api: AxiosInstance = axios.create({
   baseURL: import.meta.env.VITE_API_BASE_URL as string,
-  // Set default headers for every request; here, we ensure that the content is sent in JSON format
   headers: {
     "Content-Type": "application/json",
   },
   timeout:
     (import.meta.env.VITE_REQUEST_TIMEOUT as number | undefined) || 10000,
-  // Enable sending cookies and other credentials with requests to support sessions
-  withCredentials: true,
+  withCredentials: true, // Important for cookies to be sent with requests
 });
 
-// Define an asynchronous delay function that returns a promise, used for implementing exponential backoff
+// Function to add callbacks to the subscriber queue
+const subscribeTokenRefresh = (callback: () => void) => {
+  refreshSubscribers.push(callback);
+};
+
+// Function to notify all subscribers that the token has been refreshed
+const onTokenRefreshed = () => {
+  refreshSubscribers.forEach((callback) => callback());
+  refreshSubscribers = [];
+};
+
+// Function to handle refresh token failure
+const onTokenRefreshFailed = () => {
+  refreshSubscribers = [];
+};
+
 const delay = (duration: number): Promise<void> =>
   new Promise((resolve) => setTimeout(resolve, duration));
 
-// Extend AxiosRequestConfig to include our custom properties
 interface ExtendedAxiosRequestConfig extends AxiosRequestConfig {
   _retry?: number;
   retry?: boolean;
 }
 
-// Add a response interceptor to the Axios instance to handle errors and implement retry logic
 api.interceptors.response.use(
-  // Success handler: if the response is successful, simply return it without modifications
   (response: AxiosResponse) => response,
-  // Error handler: this asynchronous function processes any errors encountered during the request
   async (error: AxiosError) => {
-    // Save the configuration of the original request; this is useful for potentially retrying the request
     const originalRequest = error.config as ExtendedAxiosRequestConfig;
 
-    // Check if the error status code is 401 (Unauthorized)
-    // This typically indicates that the user's session has expired or they are not properly authenticated
-    if (error.response?.status === 401) {
-      // Log the error with a custom message about session expiration or unauthorized access
-      logError("Session expired or unauthorized access", error.toString());
-      // Call the logoutUser function to clear the user session
-      await logoutUser();
-      // Reject the promise with a new error message prompting the user to log in again
-      return Promise.reject(
-        new Error("Your session has expired. Please log in again.")
-      );
+    // Check if the error is due to an unauthorized request (401)
+    if (error.response?.status === 401 && originalRequest) {
+      // Ensure the URL is not the refresh token endpoint itself to prevent loops
+      const isRefreshTokenRequest =
+        originalRequest.url?.includes("refresh-token");
+
+      if (isRefreshTokenRequest) {
+        // If the refresh token endpoint itself returns 401, we can't recover
+        logError("Refresh token endpoint returned 401", error.toString());
+        await logoutUser();
+        return Promise.reject(
+          new Error("Authentication failed. Please log in again.")
+        );
+      }
+
+      if (!isRefreshingToken) {
+        isRefreshingToken = true;
+
+        try {
+          // Attempt to refresh the token - this will set the new token in cookies
+          await refreshToken();
+
+          // If we get here, token refresh was successful
+          isRefreshingToken = false;
+
+          // Notify all subscribers that the token has been refreshed
+          onTokenRefreshed();
+
+          // Retry the original request - the cookie will be sent automatically
+          return api(originalRequest);
+        } catch (refreshError) {
+          // Token refresh failed
+          isRefreshingToken = false;
+          onTokenRefreshFailed();
+          logError("Token refresh failed", refreshError as string);
+          await logoutUser();
+          return Promise.reject(
+            new Error("Your session has expired. Please log in again.")
+          );
+        }
+      } else {
+        // Token refresh is already in progress, so we'll wait for it to complete
+        return new Promise((resolve) => {
+          subscribeTokenRefresh(() => {
+            // Retry the original request - the cookie will be sent automatically
+            resolve(api(originalRequest));
+          });
+        });
+      }
     }
 
-    // Check for HTTP status 429 (Too Many Requests) or any 5xx server errors,
-    // and ensure the request is eligible for a retry (i.e., it hasn't been flagged to skip retries)
+    // Remaining error handling logic for other error codes (429, 5xx, etc.)
     if (
       error.response?.status === 429 ||
       ((error.response?.status ?? 0) >= 500 && originalRequest?.retry !== false)
     ) {
-      // Initialize or retrieve the retry counter for this request; default to 0 if not already set
       originalRequest._retry = originalRequest._retry || 0;
-      // Check if the current retry count is less than the maximum allowed retries (from an environment variable or default to 3)
       if (
         originalRequest._retry <
         ((import.meta.env.VITE_MAX_RETRIES as number) || 3)
       ) {
-        // Increment the retry counter for this request
         originalRequest._retry += 1;
-        // Calculate the delay using exponential backoff: 2 raised to the power of the retry count multiplied by 1000 (to convert to milliseconds)
         const backoffDuration = Math.pow(2, originalRequest._retry) * 1000;
-        // Wait for the calculated backoff duration before retrying the request
         await delay(backoffDuration);
-        // Retry the original request using the same Axios instance and return its promise
         return api(originalRequest);
       }
     }
 
-    // Handle timeout errors: check if the error code indicates a connection abort (ECONNABORTED)
-    // or if the error message mentions "timeout"
     if (error.code === "ECONNABORTED" || error.message?.includes("timeout")) {
-      // Log the timeout error with a custom message
       logError("Request timed out:", error.toString());
-      // Reject the promise with a new error message to inform the caller of the timeout
       return Promise.reject(
         new Error(
           "The request took too long to complete. Please try again later."
@@ -88,15 +129,10 @@ api.interceptors.response.use(
       );
     }
 
-    // For all other error types:
-    // Log the error using the logError function
     logError(error);
-    // Notify the administrator of a critical API failure using the notifyAdmin function
     notifyAdmin("Critical API failure", error);
-    // Reject the promise with the original error, so the caller can handle it appropriately
     return Promise.reject(error);
   }
 );
 
-// Export the configured Axios instance (api) for use in other parts of the application
 export { api };

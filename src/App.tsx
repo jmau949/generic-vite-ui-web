@@ -13,6 +13,7 @@ import ErrorBoundary from "./components/ErrorBoundary/ErrorBoundary";
 import { Provider } from "react-redux";
 import { store, persistor } from "./redux/store";
 import { PersistGate } from "redux-persist/integration/react";
+import TestPage from "./pages/auth/TestPage";
 
 const App: React.FC = () => (
   <ErrorBoundary>
@@ -35,6 +36,14 @@ const App: React.FC = () => (
                   element={
                     <PrivateRoute>
                       <HomePage />
+                    </PrivateRoute>
+                  }
+                />
+                <Route
+                  path="/test"
+                  element={
+                    <PrivateRoute>
+                      <TestPage />
                     </PrivateRoute>
                   }
                 />
