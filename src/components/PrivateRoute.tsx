@@ -1,17 +1,28 @@
-import { ReactNode } from "react";
-import { Navigate } from "react-router-dom";
+import { Navigate, useLocation } from "react-router-dom";
 import { useAuth } from "../auth/AuthProvider";
+import { Spinner } from "./ui/spinner";
 
 interface PrivateRouteProps {
-  children: ReactNode;
+  children: React.ReactNode;
 }
 
 const PrivateRoute: React.FC<PrivateRouteProps> = ({ children }) => {
-  const { user, loading } = useAuth();
+  const { status, user, isLoading } = useAuth();
+  const location = useLocation();
 
-  if (loading) return <div>Loading...</div>;
+  // Check if still determining auth status
+  if (status === "idle" || status === "checking" || isLoading) {
+    return <Spinner />;
+  }
 
-  return user ? children : <Navigate to="/login" replace />;
+  // User is not authenticated
+  if (status === "unauthenticated" || !user) {
+    // Redirect to login but save the location they were trying to access
+    return <Navigate to="/login" state={{ from: location }} replace />;
+  }
+
+  // User is authenticated and has required permissions
+  return <>{children}</>;
 };
 
 export default PrivateRoute;

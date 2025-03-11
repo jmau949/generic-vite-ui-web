@@ -143,3 +143,17 @@ export const confirmForgotPassword = async (
     );
   }
 };
+
+
+
+export const refreshToken = async (): Promise<void> => {
+  try {
+    await api.post(
+      "/api/v1/users/refresh-token",
+      {},
+      { withCredentials: true }
+    );
+  } catch (error: any) {
+    handleApiError(error, "Token refresh failed. Please try again later.");
+  }
+};
