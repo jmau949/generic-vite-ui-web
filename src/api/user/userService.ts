@@ -1,19 +1,9 @@
 import { api } from "../api";
 import { handleApiError } from "@/lib/utils";
+import {User, LoginCredentials} from '../../types/user'
 
 // Define types for user authentication
-export interface LoginCredentials {
-  email: string;
-  password: string;
-}
 
-export interface User {
-  sub?: string;
-  email: string;
-  firstName?: string;
-  lastName?: string;
-  [key: string]: any; // Allows additional properties from Cognito's response
-}
 
 // Login a user with validations and cookie-based authentication
 export const loginUser = async ({
