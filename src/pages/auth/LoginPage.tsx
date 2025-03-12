@@ -130,7 +130,6 @@ const LoginPage: React.FC = () => {
                   <FormControl>
                     <Input
                       id="email"
-                      placeholder="your.email@example.com"
                       type="email"
                       autoComplete="email"
                       aria-describedby="email-description"
@@ -171,7 +170,6 @@ const LoginPage: React.FC = () => {
                     <Input
                       id="password"
                       type="password"
-                      placeholder="••••••••"
                       autoComplete="current-password"
                       aria-describedby="password-description"
                       disabled={loading}

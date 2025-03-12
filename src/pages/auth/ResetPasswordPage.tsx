@@ -188,7 +188,6 @@ const ResetPasswordPage: React.FC = () => {
                       <FormControl>
                         <Input
                           id="email"
-                          placeholder="your.email@example.com"
                           type="email"
                           autoComplete="email"
                           disabled={loading || !!email}
