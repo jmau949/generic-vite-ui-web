@@ -8,11 +8,16 @@ interface PrivateRouteProps {
 }
 
 const PrivateRoute: React.FC<PrivateRouteProps> = ({ children }) => {
-  const { user, loading } = useAuth();
+  const { user, loading, authChecked } = useAuth();
 
-  if (loading) return <Spinner />;
+  // Show loading spinner only while authentication is being checked
+  if (loading && !authChecked) return <Spinner />;
 
-  return user ? children : <Navigate to="/login" replace />;
+  // Once auth is checked, redirect to login if no user
+  if (authChecked && !user) return <Navigate to="/login" replace />;
+
+  // If we have a user or still checking auth with cached user
+  return <>{children}</>;
 };
 
 export default PrivateRoute;
