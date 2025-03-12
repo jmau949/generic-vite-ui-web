@@ -45,6 +45,7 @@ const delay = (duration: number): Promise<void> =>
 interface ExtendedAxiosRequestConfig extends AxiosRequestConfig {
   _retry?: number;
   retry?: boolean;
+  skipTokenRefresh?: boolean;
 }
 
 api.interceptors.response.use(
@@ -54,17 +55,33 @@ api.interceptors.response.use(
 
     // Check if the error is due to an unauthorized request (401)
     if (error.response?.status === 401 && originalRequest) {
+      // Skip token refresh for GET /api/v1/users/me endpoint
+      const isUserMeEndpoint =
+        originalRequest.url === "/api/v1/users/me" &&
+        originalRequest.method?.toLowerCase() === "get";
+
       // Ensure the URL is not the refresh token endpoint itself to prevent loops
       const isRefreshTokenRequest =
         originalRequest.url?.includes("refresh-token");
 
-      if (isRefreshTokenRequest) {
-        // If the refresh token endpoint itself returns 401, we can't recover
-        logError("Refresh token endpoint returned 401", error.toString());
-        await logoutUser();
-        return Promise.reject(
-          new Error("Authentication failed. Please log in again.")
-        );
+      if (
+        isRefreshTokenRequest ||
+        isUserMeEndpoint ||
+        originalRequest.skipTokenRefresh
+      ) {
+        // If the refresh token endpoint itself returns a 401 or it's the /users/me endpoint
+        // or skipTokenRefresh is explicitly set, don't attempt to refresh
+        if (isUserMeEndpoint) {
+          return Promise.reject(error);
+        }
+
+        if (isRefreshTokenRequest) {
+          logError("Refresh token endpoint returned 401", error.toString());
+          await logoutUser();
+          return Promise.reject(
+            new Error("Authentication failed. Please log in again.")
+          );
+        }
       }
 
       if (!isRefreshingToken) {
