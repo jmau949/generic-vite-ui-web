@@ -59,16 +59,15 @@ api.interceptors.request.use((config) => {
 
   return config;
 });
-
 api.interceptors.response.use(
   (response: AxiosResponse) => {
     // Store the request ID from the response if provided
-    if (response.headers['x-request-id']) {
-      sessionStorage.setItem('lastRequestId', response.headers['x-request-id']);
+    if (response.headers["x-request-id"]) {
+      sessionStorage.setItem("lastRequestId", response.headers["x-request-id"]);
     }
-    
+
     return response;
-  }),
+  },
   async (error: AxiosError) => {
     const originalRequest = error.config as ExtendedAxiosRequestConfig;
 
@@ -170,5 +169,6 @@ api.interceptors.response.use(
     return Promise.reject(error);
   }
 );
+
 
 export { api };
