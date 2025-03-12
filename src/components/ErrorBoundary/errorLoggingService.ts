@@ -10,6 +10,7 @@ import * as Sentry from "@sentry/react";
  * - context: Optional additional context as a record of key-value pairs.
  * - userId: Optional identifier for the user (could be fetched from an auth service).
  * - timestamp: The time at which the error was logged.
+ * - requestId: Optional identifier for tracking requests across systems.
  */
 interface ErrorLogData {
   error: Error;
@@ -17,6 +18,7 @@ interface ErrorLogData {
   context?: Record<string, unknown>;
   userId?: string;
   timestamp: string;
+  requestId?: string;
 }
 
 /**
@@ -63,12 +65,13 @@ class ErrorLoggingService {
    * @param {Error} error - The error object that was caught.
    * @param {ErrorInfo} [errorInfo] - Optional React error information (e.g., component stack).
    * @param {Record<string, unknown>} [context] - Optional additional context to include in the log.
+   * @param {string} [userId] - Optional user identifier (typically email).
    */
   public logError(
     error: Error,
     errorInfo?: ErrorInfo | null,
     context?: Record<string, unknown>,
-    userId?: string // Accept userId parameter (email)
+    userId?: string
   ): void {
     // Log the error to the console.
     console.error("Error caught by error logging service:", error);
@@ -77,6 +80,9 @@ class ErrorLoggingService {
     if (errorInfo) {
       console.error("Component stack:", errorInfo.componentStack);
     }
+
+    // Extract requestId from context or try to retrieve it from sessionStorage
+    let requestId = context?.requestId as string || sessionStorage.getItem("lastRequestId") || undefined;
 
     // sentry will not be initialized in development, but logging service might be
     if (import.meta.env.MODE === "development") {
@@ -90,24 +96,32 @@ class ErrorLoggingService {
       context,
       userId,
       timestamp: new Date().toISOString(),
+      requestId
     };
-    // send react-error-boundary caught error to sentry
-
+    
     console.log("sending to sentry, log service", logData);
     this.sendToSentry(logData);
 
     // In production, send the error log to the external logging service. (splunk, datadog)
     this.sendToLoggingService(logData);
   }
+
+  /**
+   * Private method to send error data to Sentry.
+   * 
+   * @param {ErrorLogData} logData - The error log data to send.
+   */
   private sendToSentry(logData: ErrorLogData): void {
     Sentry.captureException(logData.error, {
       extra: {
         componentStack: logData.errorInfo?.componentStack,
         ...logData.context,
-        userId: logData.userId, // Send userId to Sentry
+        userId: logData.userId,
+        requestId: logData.requestId
       },
     });
   }
+
   /**
    * Private method to send the error log data to an external logging service.
    * This method abstracts the implementation of sending the log data.
@@ -117,11 +131,18 @@ class ErrorLoggingService {
   private sendToLoggingService(logData: ErrorLogData): void {
     // If an API endpoint is provided, send the error details to that endpoint.
     if (this.apiEndpoint) {
+      const headers: Record<string, string> = {
+        "Content-Type": "application/json",
+      };
+      
+      // Add X-Request-ID header if a requestId is available
+      if (logData.requestId) {
+        headers["X-Request-ID"] = logData.requestId;
+      }
+
       fetch(this.apiEndpoint, {
-        method: "POST", // Use HTTP POST to send the error log.
-        headers: {
-          "Content-Type": "application/json", // Specify that the request body is JSON.
-        },
+        method: "POST",
+        headers,
         body: JSON.stringify(logData),
       }).catch((err) => {
         // If sending the error log fails, handle the error.
@@ -131,15 +152,27 @@ class ErrorLoggingService {
         }
       });
     }
+  }
 
-    // Alternatively, if you are using a third-party logging service such as Sentry,
-    // you could capture the exception with additional context as shown in the commented code below:
-    // Sentry.captureException(logData.error, {
-    //   extra: {
-    //     componentStack: logData.errorInfo?.componentStack,
-    //     ...logData.context
-    //   }
-    // });
+  /**
+   * Public method to set the last request ID in session storage.
+   * This can be used by API interceptors to store the request ID from responses.
+   * 
+   * @param {string} requestId - The request ID to store.
+   */
+  public setLastRequestId(requestId: string): void {
+    if (requestId) {
+      sessionStorage.setItem("lastRequestId", requestId);
+    }
+  }
+
+  /**
+   * Public method to get the last known request ID from session storage.
+   * 
+   * @returns {string|null} The last known request ID or null if not available.
+   */
+  public getLastRequestId(): string | null {
+    return sessionStorage.getItem("lastRequestId");
   }
 }
 

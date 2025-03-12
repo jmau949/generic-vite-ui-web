@@ -7,6 +7,7 @@ import axios, {
 import { logError, notifyAdmin } from "../utils/errorHandling";
 import { logoutUser } from "./user/userService";
 import { refreshToken } from "./user/userService"; // Import refreshToken function
+import { v4 as uuidv4 } from "uuid";
 
 // Flag to track if a token refresh is currently in progress
 let isRefreshingToken = false;
@@ -47,9 +48,27 @@ interface ExtendedAxiosRequestConfig extends AxiosRequestConfig {
   retry?: boolean;
   skipTokenRefresh?: boolean;
 }
+api.interceptors.request.use((config) => {
+  // Generate a new request ID if not already present
+  if (!config.headers["X-Request-ID"]) {
+    config.headers["X-Request-ID"] = uuidv4();
+  }
+
+  // Store the request ID in sessionStorage for potential reuse
+  sessionStorage.setItem("lastRequestId", config.headers["X-Request-ID"]);
+
+  return config;
+});
 
 api.interceptors.response.use(
-  (response: AxiosResponse) => response,
+  (response: AxiosResponse) => {
+    // Store the request ID from the response if provided
+    if (response.headers['x-request-id']) {
+      sessionStorage.setItem('lastRequestId', response.headers['x-request-id']);
+    }
+    
+    return response;
+  }),
   async (error: AxiosError) => {
     const originalRequest = error.config as ExtendedAxiosRequestConfig;
 
