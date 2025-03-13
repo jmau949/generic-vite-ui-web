@@ -18,9 +18,7 @@ const HomePage: React.FC = () => {
 
   const handleSubmit = () => {
     if (inputValue.trim()) {
-      // Navigate or handle submission
       console.log("Submitted:", inputValue);
-      // navigate("/chat", { state: { initialMessage: inputValue } });
     }
   };
 
@@ -36,32 +34,32 @@ const HomePage: React.FC = () => {
       <MetaTags title="AI Assistant" description="Your personal AI assistant" />
 
       <main className="flex flex-col items-center justify-center flex-1 w-full px-4 py-12">
-        <div className="flex flex-col items-center justify-center max-w-3xl mx-auto text-center space-y-6">
+        <div className="w-full max-w-4xl mx-auto text-center space-y-6">
           <h1 className="text-4xl font-bold tracking-tight text-gray-900 dark:text-gray-50 sm:text-5xl">
             How can I help?
           </h1>
-          <div className="w-full max-w-xl mt-8">
-            <Card className="p-1 shadow-md">
-              <div className="relative">
+          <div className="w-full">
+            <Card className="w-full p-4 shadow-md">
+              <div className="relative w-full">
                 <Textarea
                   placeholder="Message..."
                   value={inputValue}
                   onChange={handleInputChange}
                   onFocus={handleInputFocus}
                   onKeyDown={handleKeyDown}
-                  className={`w-full pr-12 border-0 shadow-none resize-none focus:ring-0 ${
-                    isExpanded ? "min-h-32" : "min-h-16"
+                  className={`w-full border-0 shadow-none resize-none focus:ring-0 ${
+                    isExpanded ? "min-h-40" : "min-h-20"
                   } transition-all duration-200`}
                 />
                 <Button
-                  className="absolute right-2 bottom-2 rounded-full w-8 h-8 p-0"
+                  className="absolute right-4 bottom-4 rounded-full w-10 h-10 p-0"
                   onClick={handleSubmit}
                   disabled={!inputValue.trim()}
                 >
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
-                    width="16"
-                    height="16"
+                    width="18"
+                    height="18"
                     viewBox="0 0 24 24"
                     fill="none"
                     stroke="currentColor"
@@ -83,23 +81,3 @@ const HomePage: React.FC = () => {
 };
 
 export default HomePage;
-
-// The MetaTags component below injects a variety of SEO-friendly tags:
-// - Title: Sets the page title (displayed in search results and browser tabs).
-// - Description: Provides a summary of the page.
-// - Keywords: Lists important terms (less critical but can be used).
-// - Author: Indicates who created the content.
-// - Canonical: Points to the preferred version of the URL.
-// - Hreflang: Helps search engines serve the correct regional or language URL.
-// - Structured Data: Provides JSON-LD for rich search results.
-// - Open Graph and Twitter tags: Optimize social sharing displays.
-
-// <MetaTags
-// title="REPLACEME"
-// description="REPLACEME"
-// keywords="REPLACEME"
-// author="REPLACEME"
-// ogImageUrl="REPLACEME"
-// ogUrl="REPLACEME"
-// twitterImageUrl="REPLACEME"
-// />
