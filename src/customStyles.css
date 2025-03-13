@@ -16,30 +16,6 @@
   box-shadow: none !important;
 }
 
-/* Custom input styles */
-input,
-textarea,
-select,
-button {
-  border-radius: 0.5rem;
-  border: 1px solid #d1d5db;
-  background-color: white;
-  padding: 0.5rem 1rem;
-  color: #1f2937;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
-  transition: all 200ms ease-in-out;
-}
-
-/* Reduce input focus highlight */
-input:focus,
-textarea:focus,
-select:focus,
-button:focus {
-  border-color: #9ca3af;
-  background-color: #f9fafb;
-  box-shadow: none !important;
-}
-
 /* Custom button styles */
 button {
   border-radius: 0.5rem;
@@ -69,21 +45,6 @@ button:active {
   --muted-foreground: 0 0% 74%;
 }
 
-/* Card style */
-.card {
-  border-radius: 1rem;
-  border: 1px solid #e5e7eb;
-  background-color: white;
-  padding: 1.5rem;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1),
-    0 2px 4px -1px rgba(0, 0, 0, 0.06);
-  transition: all 200ms ease-in-out;
-}
-
-.dark .card {
-  border-color: #2d2d2d;
-  background-color: #171717;
-}
 
 /* Reduce selection highlight color */
 ::selection {
@@ -98,7 +59,3 @@ button:hover {
   transition: opacity 0.2s ease-in-out;
 }
 
-/* Softened shadow for elements */
-.shadow-soft {
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
-}
