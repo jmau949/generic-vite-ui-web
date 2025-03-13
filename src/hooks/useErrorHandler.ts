@@ -34,6 +34,7 @@ export const useErrorHandler = (defaultContext?: ErrorContext) => {
 
       if (error && typeof error === "object" && "response" in error) {
         // For Axios errors
+        // @ts-ignore
         requestId = error.response?.headers?.["x-request-id"];
       }
 

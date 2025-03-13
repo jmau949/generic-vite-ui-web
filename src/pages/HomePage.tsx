@@ -1,12 +1,10 @@
 import React, { useState } from "react";
 import MetaTags from "../components/MetaTags";
-import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Card } from "@/components/ui/card";
 
 const HomePage: React.FC = () => {
-  const navigate = useNavigate();
   const [inputValue, setInputValue] = useState("");
   const [isExpanded, setIsExpanded] = useState(false);
 

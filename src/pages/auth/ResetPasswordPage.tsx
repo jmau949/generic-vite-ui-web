@@ -11,7 +11,7 @@ import {
   FormItem,
   FormMessage,
   FormLabel,
-  FormDescription,
+
 } from "@/components/ui/form";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -220,7 +220,13 @@ const ResetPasswordPage: React.FC = () => {
                           {/* Animated Error Messages */}
                           <div
                             className={`transition-all duration-300 ${
-                              form.formState.errors[fieldName]
+                              form.formState.errors[
+                                fieldName as
+                                  | "email"
+                                  | "code"
+                                  | "password"
+                                  | "confirmPassword"
+                              ]
                                 ? "max-h-16 opacity-100"
                                 : "max-h-0 opacity-0 overflow-hidden"
                             }`}

@@ -15,7 +15,6 @@ import ForgotPasswordPage from "./pages/auth/ForgotPasswordPage";
 import ConfirmEmailPage from "./pages/auth/ConfirmEmailPage";
 import ResetPasswordPage from "./pages/auth/ResetPasswordPage";
 import NotFoundPage from "./pages/errors/NotFoundPage";
-import TestPage from "./pages/auth/TestPage";
 
 const App: React.FC = () => (
   <ErrorBoundary>
@@ -41,14 +40,7 @@ const App: React.FC = () => (
                     </PrivateRoute>
                   }
                 />
-                <Route
-                  path="/test"
-                  element={
-                    <PrivateRoute>
-                      <TestPage />
-                    </PrivateRoute>
-                  }
-                />
+
                 <Route path="*" element={<NotFoundPage />} />
               </Routes>
             </RootLayout>
