@@ -19,7 +19,6 @@ import * as z from "zod";
 import { forgotPassword } from "@/api/user/userService";
 import { useErrorHandler } from "@/hooks/useErrorHandler";
 
-// Form validation schema
 const forgotPasswordSchema = z.object({
   email: z
     .string()
@@ -29,7 +28,6 @@ const forgotPasswordSchema = z.object({
 
 type ForgotPasswordFormValues = z.infer<typeof forgotPasswordSchema>;
 
-// Custom hook for forgot password logic
 const useForgotPasswordForm = () => {
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
@@ -42,7 +40,9 @@ const useForgotPasswordForm = () => {
     },
     mode: "onChange",
   });
+
   const handleError = useErrorHandler({ component: "ForgotPasswordPage" });
+
   const onSubmit = async (data: ForgotPasswordFormValues) => {
     setLoading(true);
     setError(null);
@@ -51,19 +51,13 @@ const useForgotPasswordForm = () => {
     try {
       await forgotPassword({ email: data.email });
       setSuccess(true);
-      // Optional: clear form after successful submission
-      // form.reset(); - Commented out to keep email for navigation
     } catch (error: any) {
-      // Use error.errorCode instead of error.message
       const errorCode: string = error.errorCode || "UnknownError";
 
-      // Define a default user-friendly message
       let userFriendlyMessage =
         "Failed to send password reset email. Please try again.";
 
-      // Handle specific Cognito error codes
       if (errorCode === "UserNotFoundException") {
-        // If the email isn't registered, indicate success to avoid revealing user information
         setSuccess(true);
         return;
       } else if (errorCode === "InvalidParameterException") {
@@ -77,7 +71,6 @@ const useForgotPasswordForm = () => {
         handleError(error, "forgotPassword");
       }
 
-      // Set the user-friendly error message
       setError(userFriendlyMessage);
     } finally {
       setLoading(false);
@@ -100,11 +93,8 @@ const ForgotPasswordPage: React.FC = () => {
   const emailInputRef = useRef<HTMLInputElement>(null);
   const navigate = useNavigate();
 
-  // Focus on email input when component mounts
   useEffect(() => {
-    if (emailInputRef.current) {
-      emailInputRef.current.focus();
-    }
+    emailInputRef.current?.focus();
   }, []);
 
   const handleProceedToReset = () => {
@@ -115,18 +105,18 @@ const ForgotPasswordPage: React.FC = () => {
   return (
     <div className="flex justify-center items-center min-h-screen bg-gray-100">
       <div className="w-full max-w-md p-8 bg-white rounded-lg shadow-md">
-        <h1 className="mb-6 text-2xl font-bold text-center">Reset Password</h1>
+        <h1 className="mb-4 text-2xl font-bold text-center">Reset Password</h1>
 
         {success ? (
-          <div className="space-y-6">
-            <Alert variant="default" className="mb-4">
+          <div className="space-y-4">
+            <Alert variant="default" className="mb-3">
               <AlertDescription>
                 If an account exists with this email, we've sent you
                 instructions to reset your password. Please check your inbox and
                 spam folder.
               </AlertDescription>
             </Alert>
-            <div className="flex flex-col space-y-4">
+            <div className="flex flex-col space-y-3">
               <Button onClick={handleProceedToReset} className="w-full">
                 Enter Reset Code
               </Button>
@@ -138,10 +128,7 @@ const ForgotPasswordPage: React.FC = () => {
                 Return to Login
               </Button>
               <Button
-                onClick={() => {
-                  setSuccess(false);
-                  // Don't reset form to keep the email for convenience
-                }}
+                onClick={() => setSuccess(false)}
                 variant="ghost"
                 className="w-full"
               >
@@ -151,21 +138,30 @@ const ForgotPasswordPage: React.FC = () => {
           </div>
         ) : (
           <>
-            <p className="mb-6 text-gray-600">
+            <p className="mb-4 text-gray-600">
               Enter your email address and we'll send you instructions to reset
               your password.
             </p>
 
-            {error && (
-              <Alert variant="destructive" className="mb-4">
-                <AlertDescription>{error}</AlertDescription>
-              </Alert>
-            )}
+            {/* Animated Error Message */}
+            <div
+              className={`transition-all duration-300 ${
+                error
+                  ? "max-h-32 opacity-100"
+                  : "max-h-0 opacity-0 overflow-hidden"
+              }`}
+            >
+              {error && (
+                <Alert variant="destructive" className="mb-3">
+                  <AlertDescription>{error}</AlertDescription>
+                </Alert>
+              )}
+            </div>
 
             <Form {...form}>
               <form
                 onSubmit={form.handleSubmit(onSubmit)}
-                className="space-y-6"
+                className="space-y-4"
               >
                 <FormField
                   control={form.control}
@@ -178,7 +174,6 @@ const ForgotPasswordPage: React.FC = () => {
                           id="email"
                           type="email"
                           autoComplete="email"
-                          aria-describedby="email-description"
                           disabled={loading}
                           {...field}
                           ref={(e) => {
@@ -189,13 +184,16 @@ const ForgotPasswordPage: React.FC = () => {
                           }}
                         />
                       </FormControl>
-                      <FormDescription
-                        id="email-description"
-                        className="sr-only"
+                      {/* Animated Error Message */}
+                      <div
+                        className={`transition-all duration-300 ${
+                          form.formState.errors.email
+                            ? "max-h-16 opacity-100"
+                            : "max-h-0 opacity-0 overflow-hidden"
+                        }`}
                       >
-                        Enter the email address associated with your account
-                      </FormDescription>
-                      <FormMessage />
+                        <FormMessage />
+                      </div>
                     </FormItem>
                   )}
                 />
@@ -204,11 +202,10 @@ const ForgotPasswordPage: React.FC = () => {
                   type="submit"
                   className="w-full"
                   disabled={loading || !form.formState.isValid}
-                  aria-disabled={loading || !form.formState.isValid}
                 >
                   {loading ? (
                     <>
-                      <Spinner className="mr-2 h-4 w-4" aria-hidden="true" />
+                      <Spinner className="mr-2 h-4 w-4" />
                       <span>Sending...</span>
                     </>
                   ) : (
@@ -218,13 +215,12 @@ const ForgotPasswordPage: React.FC = () => {
               </form>
             </Form>
 
-            <div className="mt-6 text-center">
+            <div className="mt-4 text-center">
               <p>
                 Remember your password?{" "}
                 <Link
                   to="/login"
                   className="text-blue-600 hover:text-blue-800 hover:underline"
-                  tabIndex={0}
                 >
                   Sign in
                 </Link>
@@ -234,7 +230,6 @@ const ForgotPasswordPage: React.FC = () => {
                 <Link
                   to="/reset-password"
                   className="text-blue-600 hover:text-blue-800 hover:underline"
-                  tabIndex={0}
                 >
                   Reset your password
                 </Link>

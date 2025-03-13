@@ -19,7 +19,6 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { useErrorHandler } from "@/hooks/useErrorHandler";
 
-// Define schema with detailed validation messages
 const loginSchema = z.object({
   email: z
     .string()
@@ -33,7 +32,6 @@ const loginSchema = z.object({
 
 type LoginFormValues = z.infer<typeof loginSchema>;
 
-// Custom hook for login logic (without lockout logic)
 const useLoginForm = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState<boolean>(false);
@@ -46,15 +44,15 @@ const useLoginForm = () => {
       email: "",
       password: "",
     },
-    mode: "onChange", // Validate on change for immediate feedback
+    mode: "onChange",
   });
 
   useEffect(() => {
-    // Redirect if user is already logged in
     if (user) {
       navigate("/");
     }
   }, [user, navigate]);
+
   const handleError = useErrorHandler({ component: "LoginPage" });
   const commonErrorCodes = [
     "UserNotConfirmedException",
@@ -62,6 +60,7 @@ const useLoginForm = () => {
     "NotAuthorizedException",
     "UserNotFoundException",
   ];
+
   const onSubmit = async (data: LoginFormValues) => {
     setLoading(true);
     setLoginError(null);
@@ -70,18 +69,14 @@ const useLoginForm = () => {
       navigate("/");
     } catch (error: any) {
       if (error?.message?.includes("User not confirmed")) {
-        // Navigate to confirm email page, passing along the email
         navigate("/confirm-email", { state: { email: data.email } });
-        return; // Early return to avoid further error processing
+        return;
       }
       if (error?.message?.includes("Password reset required")) {
-        // Navigate to reset password page, passing along the email
         navigate("/reset-password", { state: { email: data.email } });
-        return; // Early return
+        return;
       }
       setLoginError(error.message || "An unexpected error occurred");
-
-      // Check error.errorCode against common Cognito exceptions
 
       if (error.errorCode && !commonErrorCodes.includes(error.errorCode)) {
         handleError(error, "login");
@@ -103,7 +98,6 @@ const LoginPage: React.FC = () => {
   const { form, loading, loginError, onSubmit } = useLoginForm();
   const emailInputRef = useRef<HTMLInputElement>(null);
 
-  // Focus on email input when component mounts
   useEffect(() => {
     emailInputRef.current?.focus();
   }, []);
@@ -111,16 +105,25 @@ const LoginPage: React.FC = () => {
   return (
     <div className="flex justify-center items-center min-h-screen bg-gray-100">
       <div className="w-full max-w-md p-8 bg-white rounded-lg shadow-md">
-        <h1 className="mb-6 text-2xl font-bold text-center">Sign In</h1>
+        <h1 className="mb-4 text-2xl font-bold text-center">Sign In</h1>
 
-        {loginError && (
-          <Alert variant="destructive" className="mb-4">
-            <AlertDescription>{loginError}</AlertDescription>
-          </Alert>
-        )}
+        {/* Animated Error Message */}
+        <div
+          className={`transition-all duration-300 ${
+            loginError
+              ? "max-h-32 opacity-100"
+              : "max-h-0 opacity-0 overflow-hidden"
+          }`}
+        >
+          {loginError && (
+            <Alert variant="destructive" className="mb-3">
+              <AlertDescription>{loginError}</AlertDescription>
+            </Alert>
+          )}
+        </div>
 
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
             <FormField
               control={form.control}
               name="email"
@@ -132,7 +135,6 @@ const LoginPage: React.FC = () => {
                       id="email"
                       type="email"
                       autoComplete="email"
-                      aria-describedby="email-description"
                       disabled={loading}
                       {...field}
                       ref={(e) => {
@@ -143,10 +145,16 @@ const LoginPage: React.FC = () => {
                       }}
                     />
                   </FormControl>
-                  <FormDescription id="email-description" className="sr-only">
-                    Enter the email address associated with your account
-                  </FormDescription>
-                  <FormMessage />
+                  {/* Animated Error Message */}
+                  <div
+                    className={`transition-all duration-300 ${
+                      form.formState.errors.email
+                        ? "max-h-16 opacity-100"
+                        : "max-h-0 opacity-0 overflow-hidden"
+                    }`}
+                  >
+                    <FormMessage />
+                  </div>
                 </FormItem>
               )}
             />
@@ -161,7 +169,6 @@ const LoginPage: React.FC = () => {
                     <Link
                       to="/forgot-password"
                       className="text-sm text-blue-600 hover:text-blue-800"
-                      tabIndex={0}
                     >
                       Forgot password?
                     </Link>
@@ -171,18 +178,20 @@ const LoginPage: React.FC = () => {
                       id="password"
                       type="password"
                       autoComplete="current-password"
-                      aria-describedby="password-description"
                       disabled={loading}
                       {...field}
                     />
                   </FormControl>
-                  <FormDescription
-                    id="password-description"
-                    className="sr-only"
+                  {/* Animated Error Message */}
+                  <div
+                    className={`transition-all duration-300 ${
+                      form.formState.errors.password
+                        ? "max-h-16 opacity-100"
+                        : "max-h-0 opacity-0 overflow-hidden"
+                    }`}
                   >
-                    Enter your password
-                  </FormDescription>
-                  <FormMessage />
+                    <FormMessage />
+                  </div>
                 </FormItem>
               )}
             />
@@ -191,11 +200,10 @@ const LoginPage: React.FC = () => {
               type="submit"
               className="w-full"
               disabled={loading || !form.formState.isValid}
-              aria-disabled={loading || !form.formState.isValid}
             >
               {loading ? (
                 <>
-                  <Spinner className="mr-2 h-4 w-4" aria-hidden="true" />
+                  <Spinner className="mr-2 h-4 w-4" />
                   <span>Signing in...</span>
                 </>
               ) : (
@@ -205,14 +213,10 @@ const LoginPage: React.FC = () => {
           </form>
         </Form>
 
-        <div className="mt-6 text-center">
+        <div className="mt-4 text-center">
           <p>
             Don't have an account?{" "}
-            <Link
-              to="/signup"
-              className="text-blue-600 hover:text-blue-800"
-              tabIndex={0}
-            >
+            <Link to="/signup" className="text-blue-600 hover:text-blue-800">
               Sign up
             </Link>
           </p>

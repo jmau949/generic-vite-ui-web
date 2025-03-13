@@ -19,7 +19,6 @@ import * as z from "zod";
 import { confirmForgotPassword } from "@/api/user/userService";
 import { useErrorHandler } from "@/hooks/useErrorHandler";
 
-// Form validation schema
 const resetPasswordSchema = z
   .object({
     email: z
@@ -54,7 +53,6 @@ const resetPasswordSchema = z
 
 type ResetPasswordFormValues = z.infer<typeof resetPasswordSchema>;
 
-// Custom hook for reset password logic
 const useResetPasswordForm = (defaultEmail: string = "") => {
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
@@ -70,7 +68,9 @@ const useResetPasswordForm = (defaultEmail: string = "") => {
     },
     mode: "onChange",
   });
+
   const handleError = useErrorHandler({ component: "ResetPasswordPage" });
+
   const onSubmit = async (data: ResetPasswordFormValues) => {
     setLoading(true);
     setError(null);
@@ -83,22 +83,18 @@ const useResetPasswordForm = (defaultEmail: string = "") => {
       });
       setSuccess(true);
     } catch (error: any) {
-      // Use error.errorCode instead of error.message
       const errorCode: string = error.errorCode || "UnknownError";
-
-      // Define default error message
       let userFriendlyMessage = "Failed to reset password. Please try again.";
 
-      // Handle specific Cognito error codes
       if (
-        errorCode === "CodeMismatchException" ||
-        errorCode === "ExpiredCodeException"
+        ["CodeMismatchException", "ExpiredCodeException"].includes(errorCode)
       ) {
         userFriendlyMessage =
           "The verification code is invalid or has expired.";
       } else if (
-        errorCode === "InvalidPasswordException" ||
-        errorCode === "InvalidParameterException"
+        ["InvalidPasswordException", "InvalidParameterException"].includes(
+          errorCode
+        )
       ) {
         userFriendlyMessage =
           "Your password doesn't meet the requirements. Please try a different password.";
@@ -106,7 +102,6 @@ const useResetPasswordForm = (defaultEmail: string = "") => {
         userFriendlyMessage =
           "Network error. Please check your connection and try again.";
       } else {
-        // For unexpected errors, report them via your error handling routine
         handleError(error, "confirmForgotPassword");
       }
 
@@ -116,13 +111,7 @@ const useResetPasswordForm = (defaultEmail: string = "") => {
     }
   };
 
-  return {
-    form,
-    loading,
-    error,
-    success,
-    onSubmit,
-  };
+  return { form, loading, error, success, onSubmit };
 };
 
 const ResetPasswordPage: React.FC = () => {
@@ -135,23 +124,20 @@ const ResetPasswordPage: React.FC = () => {
     useResetPasswordForm(email);
   const codeInputRef = useRef<HTMLInputElement>(null);
 
-  // Focus on code input when component mounts
   useEffect(() => {
-    if (codeInputRef.current) {
-      codeInputRef.current.focus();
-    }
+    codeInputRef.current?.focus();
   }, []);
 
   return (
     <div className="flex justify-center items-center min-h-screen bg-gray-100">
       <div className="w-full max-w-md p-8 bg-white rounded-lg shadow-md">
-        <h1 className="mb-6 text-2xl font-bold text-center">
+        <h1 className="mb-4 text-2xl font-bold text-center">
           Reset Your Password
         </h1>
 
         {success ? (
-          <div className="space-y-6">
-            <Alert variant="default" className="mb-4">
+          <div className="space-y-4">
+            <Alert variant="default" className="mb-3">
               <AlertDescription>
                 Your password has been successfully reset. You can now log in
                 with your new password.
@@ -163,129 +149,98 @@ const ResetPasswordPage: React.FC = () => {
           </div>
         ) : (
           <>
-            <p className="mb-6 text-gray-600">
+            <p className="mb-4 text-gray-600">
               Enter the verification code sent to your email along with your new
               password.
             </p>
 
-            {error && (
-              <Alert variant="destructive" className="mb-4">
-                <AlertDescription>{error}</AlertDescription>
-              </Alert>
-            )}
+            {/* Animated Error Message */}
+            <div
+              className={`transition-all duration-300 ${
+                error
+                  ? "max-h-32 opacity-100"
+                  : "max-h-0 opacity-0 overflow-hidden"
+              }`}
+            >
+              {error && (
+                <Alert variant="destructive" className="mb-3">
+                  <AlertDescription>{error}</AlertDescription>
+                </Alert>
+              )}
+            </div>
 
             <Form {...form}>
               <form
                 onSubmit={form.handleSubmit(onSubmit)}
-                className="space-y-6"
+                className="space-y-4"
               >
-                <FormField
-                  control={form.control}
-                  name="email"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel htmlFor="email">Email</FormLabel>
-                      <FormControl>
-                        <Input
-                          id="email"
-                          type="email"
-                          autoComplete="email"
-                          disabled={loading || !!email}
-                          {...field}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="code"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel htmlFor="code">Verification Code</FormLabel>
-                      <FormControl>
-                        <Input
-                          id="code"
-                          placeholder="Enter the code from your email"
-                          type="text"
-                          autoComplete="one-time-code"
-                          disabled={loading}
-                          {...field}
-                          ref={(e) => {
-                            field.ref(e);
-                            if (codeInputRef.current !== e) {
-                              codeInputRef.current = e;
-                            }
-                          }}
-                        />
-                      </FormControl>
-                      <FormDescription>
-                        Check your email for a 6-digit verification code
-                      </FormDescription>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="password"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel htmlFor="password">New Password</FormLabel>
-                      <FormControl>
-                        <Input
-                          id="password"
-                          placeholder="Enter your new password"
-                          type="password"
-                          autoComplete="new-password"
-                          disabled={loading}
-                          {...field}
-                        />
-                      </FormControl>
-                      <FormDescription>
-                        Password must be at least 8 characters with uppercase,
-                        lowercase, number, and special character
-                      </FormDescription>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="confirmPassword"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel htmlFor="confirmPassword">
-                        Confirm Password
-                      </FormLabel>
-                      <FormControl>
-                        <Input
-                          id="confirmPassword"
-                          placeholder="Confirm your new password"
-                          type="password"
-                          autoComplete="new-password"
-                          disabled={loading}
-                          {...field}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                {["email", "code", "password", "confirmPassword"].map(
+                  (fieldName) => (
+                    <FormField
+                      key={fieldName}
+                      control={form.control}
+                      name={fieldName as keyof ResetPasswordFormValues}
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel htmlFor={fieldName}>
+                            {fieldName === "email"
+                              ? "Email"
+                              : fieldName === "code"
+                              ? "Verification Code"
+                              : fieldName === "password"
+                              ? "New Password"
+                              : "Confirm Password"}
+                          </FormLabel>
+                          <FormControl>
+                            <Input
+                              id={fieldName}
+                              type={
+                                fieldName.includes("password")
+                                  ? "password"
+                                  : "text"
+                              }
+                              autoComplete={
+                                fieldName === "code" ? "one-time-code" : "off"
+                              }
+                              disabled={
+                                loading || (fieldName === "email" && !!email)
+                              }
+                              {...field}
+                              ref={
+                                fieldName === "code"
+                                  ? (e) => {
+                                      field.ref(e);
+                                      if (codeInputRef.current !== e)
+                                        codeInputRef.current = e;
+                                    }
+                                  : field.ref
+                              }
+                            />
+                          </FormControl>
+                          {/* Animated Error Messages */}
+                          <div
+                            className={`transition-all duration-300 ${
+                              form.formState.errors[fieldName]
+                                ? "max-h-16 opacity-100"
+                                : "max-h-0 opacity-0 overflow-hidden"
+                            }`}
+                          >
+                            <FormMessage />
+                          </div>
+                        </FormItem>
+                      )}
+                    />
+                  )
+                )}
 
                 <Button
                   type="submit"
                   className="w-full"
                   disabled={loading || !form.formState.isValid}
-                  aria-disabled={loading || !form.formState.isValid}
                 >
                   {loading ? (
                     <>
-                      <Spinner className="mr-2 h-4 w-4" aria-hidden="true" />
+                      <Spinner className="mr-2 h-4 w-4" />
                       <span>Resetting Password...</span>
                     </>
                   ) : (
@@ -295,7 +250,7 @@ const ResetPasswordPage: React.FC = () => {
               </form>
             </Form>
 
-            <div className="mt-6 text-center">
+            <div className="mt-4 text-center">
               <p>
                 Didn't receive a code?{" "}
                 <Link

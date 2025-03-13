@@ -123,78 +123,70 @@ const SignUpPage = () => {
         <h1 className="mb-6 text-2xl font-bold text-center">
           Create an Account
         </h1>
-        {signupError && (
-          <Alert variant="destructive" className="mb-4">
-            <AlertDescription>{signupError}</AlertDescription>
-          </Alert>
-        )}
+
+        {/* Animated error alert */}
+        <div
+          className={`transition-all duration-300 ${
+            signupError
+              ? "max-h-32 opacity-100"
+              : "max-h-0 opacity-0 overflow-hidden"
+          }`}
+        >
+          {signupError && (
+            <Alert variant="destructive" className="mb-4">
+              <AlertDescription>{signupError}</AlertDescription>
+            </Alert>
+          )}
+        </div>
+
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-            <FormField
-              control={form.control}
-              name="firstName"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>First Name</FormLabel>
-                  <FormControl>
-                    <Input {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="lastName"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Last Name</FormLabel>
-                  <FormControl>
-                    <Input {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="email"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Email</FormLabel>
-                  <FormControl>
-                    <Input type="email" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="password"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Password</FormLabel>
-                  <FormControl>
-                    <Input type="password" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="confirmPassword"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Confirm Password</FormLabel>
-                  <FormControl>
-                    <Input type="password" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+            {[
+              "firstName",
+              "lastName",
+              "email",
+              "password",
+              "confirmPassword",
+            ].map((fieldName) => (
+              <FormField
+                key={fieldName}
+                control={form.control}
+                name={fieldName as keyof typeof signupSchema.shape}
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>
+                      {fieldName === "firstName"
+                        ? "First Name"
+                        : fieldName === "lastName"
+                        ? "Last Name"
+                        : fieldName === "email"
+                        ? "Email"
+                        : fieldName === "password"
+                        ? "Password"
+                        : "Confirm Password"}
+                    </FormLabel>
+                    <FormControl>
+                      <Input
+                        type={
+                          fieldName.includes("password") ? "password" : "text"
+                        }
+                        {...field}
+                      />
+                    </FormControl>
+                    {/* Animated error messages */}
+                    <div
+                      className={`transition-all duration-300 ${
+                        form.formState.errors[fieldName]
+                          ? "max-h-16 opacity-100"
+                          : "max-h-0 opacity-0 overflow-hidden"
+                      }`}
+                    >
+                      <FormMessage />
+                    </div>
+                  </FormItem>
+                )}
+              />
+            ))}
             <Button
               type="submit"
               className="w-full"
@@ -204,6 +196,7 @@ const SignUpPage = () => {
             </Button>
           </form>
         </Form>
+
         <div className="mt-6 text-center">
           <p>
             Already have an account?{" "}

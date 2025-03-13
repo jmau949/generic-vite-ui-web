@@ -31,19 +31,18 @@ const ConfirmEmailPage: React.FC = () => {
     "pending" | "success" | "error"
   >("pending");
   const [statusMessage, setStatusMessage] = useState<string>("");
-  const [confirmationCode, setconfirmationCode] = useState<string>("");
+  const [confirmationCode, setConfirmationCode] = useState<string>("");
   const location = useLocation();
-  // Fallback in case the state isn’t available
   const email = location.state?.email || "";
 
   useEffect(() => {
-    // Redirect if user is already logged in
     if (user) {
       navigate("/");
     }
   }, [user, navigate]);
+
   const handleError = useErrorHandler({ component: "ConfirmEmailPage" });
-  // Function to verify email with code
+
   const handleVerifyEmail = async () => {
     if (!confirmationCode.trim()) {
       setStatusMessage("Please enter the verification code");
@@ -59,7 +58,6 @@ const ConfirmEmailPage: React.FC = () => {
       setStatusMessage("Your email has been verified successfully!");
       setTimeout(() => navigate("/login"), 2000);
     } catch (error: any) {
-      console.error("Verification error", error);
       setVerificationStatus("error");
 
       if (error.code === "CodeMismatchException") {
@@ -81,29 +79,28 @@ const ConfirmEmailPage: React.FC = () => {
     }
   };
 
-  // Function to resend verification code
   const handleResendVerification = async () => {
     setResendLoading(true);
     setStatusMessage("");
 
     try {
       await resendConfirmationCode(email);
-      setStatusMessage("A new verification code has been sent to your email");
+      setStatusMessage("A new verification code has been sent to your email.");
     } catch (error: any) {
-      console.error("Resend verification error", error);
       setVerificationStatus("error");
 
       if (error.code === "LimitExceededException") {
         setStatusMessage("Too many attempts. Please try again later.");
       } else {
-        setStatusMessage(error.message || "Failed to resend verification code");
+        setStatusMessage(
+          error.message || "Failed to resend verification code."
+        );
       }
     } finally {
       setResendLoading(false);
     }
   };
 
-  // Function to handle logout
   const handleLogout = async () => {
     try {
       await logoutUser();
@@ -140,23 +137,32 @@ const ConfirmEmailPage: React.FC = () => {
           )}
         </CardHeader>
 
-        <CardContent className="space-y-6">
+        <CardContent className="space-y-4">
           {renderStatusIcon()}
 
-          {statusMessage && (
-            <Alert
-              variant={
-                verificationStatus === "error" ? "destructive" : "default"
-              }
-              className={
-                verificationStatus === "success"
-                  ? "bg-green-50 border-green-200"
-                  : ""
-              }
-            >
-              <AlertDescription>{statusMessage}</AlertDescription>
-            </Alert>
-          )}
+          {/* Animated Status Message */}
+          <div
+            className={`transition-all duration-300 ${
+              statusMessage
+                ? "max-h-32 opacity-100"
+                : "max-h-0 opacity-0 overflow-hidden"
+            }`}
+          >
+            {statusMessage && (
+              <Alert
+                variant={
+                  verificationStatus === "error" ? "destructive" : "default"
+                }
+                className={
+                  verificationStatus === "success"
+                    ? "bg-green-50 border-green-200"
+                    : ""
+                }
+              >
+                <AlertDescription>{statusMessage}</AlertDescription>
+              </Alert>
+            )}
+          </div>
 
           <div className="text-center space-y-2">
             <p className="text-gray-600">
@@ -168,27 +174,26 @@ const ConfirmEmailPage: React.FC = () => {
             </p>
           </div>
 
-          <div className="space-y-4">
-            <div className="space-y-2">
+          <div className="space-y-3">
+            <div className="space-y-1">
               <Label htmlFor="verification-code">Verification Code</Label>
               <Input
                 id="verification-code"
                 type="text"
                 placeholder="Enter verification code"
                 value={confirmationCode}
-                onChange={(e) => setconfirmationCode(e.target.value)}
+                onChange={(e) => setConfirmationCode(e.target.value)}
               />
             </div>
 
             <Button
               onClick={handleVerifyEmail}
               disabled={loading || !confirmationCode.trim()}
-              aria-disabled={loading || !confirmationCode.trim()}
               className="w-full"
             >
               {loading ? (
                 <>
-                  <Spinner className="mr-2 h-4 w-4" aria-hidden="true" />
+                  <Spinner className="mr-2 h-4 w-4" />
                   <span>Verifying...</span>
                 </>
               ) : (
@@ -199,13 +204,12 @@ const ConfirmEmailPage: React.FC = () => {
             <Button
               onClick={handleResendVerification}
               disabled={resendLoading}
-              aria-disabled={resendLoading}
               variant="outline"
               className="w-full flex items-center justify-center"
             >
               {resendLoading ? (
                 <>
-                  <Spinner className="mr-2 h-4 w-4" aria-hidden="true" />
+                  <Spinner className="mr-2 h-4 w-4" />
                   <span>Sending...</span>
                 </>
               ) : (
