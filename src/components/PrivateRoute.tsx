@@ -1,12 +1,44 @@
 import { ReactNode } from "react";
 import { Navigate } from "react-router-dom";
 import { useAuth } from "../auth/AuthProvider";
-import { Spinner } from "./ui/spinner";
 
 interface PrivateRouteProps {
   children: ReactNode;
 }
 
+// temp
+const AnimatedLoader = () => {
+  return (
+    <div className="fixed inset-0 flex items-center justify-center bg-white bg-opacity-80 z-50">
+      <div className="flex flex-col items-center">
+        {/* Animated circles */}
+        <div className="flex space-x-2 mb-4">
+          <div
+            className="w-3 h-3 bg-blue-600 rounded-full animate-bounce"
+            style={{ animationDelay: "0ms" }}
+          ></div>
+          <div
+            className="w-3 h-3 bg-blue-600 rounded-full animate-bounce"
+            style={{ animationDelay: "150ms" }}
+          ></div>
+          <div
+            className="w-3 h-3 bg-blue-600 rounded-full animate-bounce"
+            style={{ animationDelay: "300ms" }}
+          ></div>
+          <div
+            className="w-3 h-3 bg-blue-600 rounded-full animate-bounce"
+            style={{ animationDelay: "450ms" }}
+          ></div>
+        </div>
+
+        {/* Loading text with fade-in animation */}
+        <div className="text-gray-700 font-medium animate-pulse">
+          Loading your account...
+        </div>
+      </div>
+    </div>
+  );
+};
 // PrivateRoute is a wrapper component that controls access to its children based on authentication status.
 const PrivateRoute: React.FC<PrivateRouteProps> = ({ children }) => {
   // - user: contains the authenticated user's data if logged in, or null otherwise.
@@ -17,7 +49,7 @@ const PrivateRoute: React.FC<PrivateRouteProps> = ({ children }) => {
   // If the app is currently fetching auth information (loading is true) and
   // the initial auteted yet (authChecked is false),
   // render a loading spinner to hentication check hasn't complinform the user that the process is ongoing.
-  if (loading && !authChecked) return <Spinner />;
+  if (loading && !authChecked) return <AnimatedLoader />;
 
   // After the authentication check is complete (authChecked is true),
   // if no user is found (user is null), redirect the user to the login page.
