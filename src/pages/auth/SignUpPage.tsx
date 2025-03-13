@@ -72,9 +72,21 @@ const useSignupForm = () => {
     mode: "onChange",
   });
 
+  // Watch password fields to trigger validation when either changes
+  const password = form.watch("password");
+  const confirmPassword = form.watch("confirmPassword");
+
+  // Trigger validation on the confirmPassword field whenever password changes
+  useEffect(() => {
+    if (confirmPassword) {
+      form.trigger("confirmPassword");
+    }
+  }, [password, confirmPassword, form]);
+
   useEffect(() => {
     if (user) navigate("/");
   }, [user, navigate]);
+
   const COMMON_ERROR_CODES = [
     "UsernameExistsException",
     "InvalidPasswordException",
@@ -169,7 +181,9 @@ const SignUpPage = () => {
                     <FormControl>
                       <Input
                         type={
-                          fieldName.includes("password") ? "password" : "text"
+                          fieldName.toLowerCase().includes("password")
+                            ? "password"
+                            : "text"
                         }
                         {...field}
                       />
@@ -178,11 +192,12 @@ const SignUpPage = () => {
                     <div
                       className={`transition-all duration-300 ${
                         form.formState.errors[
-                          (fieldName as "firstName",
-                          "lastName",
-                          "email",
-                          "password",
-                          "confirmPassword")
+                          fieldName as
+                            | "firstName"
+                            | "lastName"
+                            | "email"
+                            | "password"
+                            | "confirmPassword"
                         ]
                           ? "max-h-16 opacity-100"
                           : "max-h-0 opacity-0 overflow-hidden"
