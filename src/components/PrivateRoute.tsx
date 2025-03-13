@@ -1,7 +1,7 @@
 import { ReactNode } from "react";
 import { Navigate } from "react-router-dom";
 import { useAuth } from "../auth/AuthProvider";
-
+import { Loader2 } from "lucide-react";
 interface PrivateRouteProps {
   children: ReactNode;
 }
@@ -11,30 +11,8 @@ const AnimatedLoader = () => {
   return (
     <div className="fixed inset-0 flex items-center justify-center bg-white bg-opacity-80 z-50">
       <div className="flex flex-col items-center">
-        {/* Animated circles */}
-        <div className="flex space-x-2 mb-4">
-          <div
-            className="w-3 h-3 bg-blue-600 rounded-full animate-bounce"
-            style={{ animationDelay: "0ms" }}
-          ></div>
-          <div
-            className="w-3 h-3 bg-blue-600 rounded-full animate-bounce"
-            style={{ animationDelay: "150ms" }}
-          ></div>
-          <div
-            className="w-3 h-3 bg-blue-600 rounded-full animate-bounce"
-            style={{ animationDelay: "300ms" }}
-          ></div>
-          <div
-            className="w-3 h-3 bg-blue-600 rounded-full animate-bounce"
-            style={{ animationDelay: "450ms" }}
-          ></div>
-        </div>
-
-        {/* Loading text with fade-in animation */}
-        <div className="text-gray-700 font-medium animate-pulse">
-          Loading your account...
-        </div>
+        {/* Large grey spinner */}
+        <Loader2 className="w-16 h-16 text-gray-500 animate-spin" />
       </div>
     </div>
   );
